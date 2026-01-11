@@ -14,6 +14,7 @@ import { NavbarComponent } from './layout/navbar/navbar.component';
 import { SidebarComponent } from './layout/sidebar/sidebar.component';
 import { NgChartsModule } from 'ng2-charts';
 import { PositionModalComponent } from './shared/components/position-modal/position-modal.component';
+import { SubportfolioModalComponent } from './shared/components/subportfolio-modal/subportfolio-modal.component';
 
 @NgModule({
   declarations: [
@@ -23,7 +24,8 @@ import { PositionModalComponent } from './shared/components/position-modal/posit
     RegisterComponent,
     NavbarComponent,
     SidebarComponent,
-    PositionModalComponent
+    PositionModalComponent,
+    SubportfolioModalComponent
   ],
   imports: [
     BrowserModule,

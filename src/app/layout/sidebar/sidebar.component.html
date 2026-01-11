@@ -9,6 +9,20 @@
     <div *ngIf="error" class="text-danger small">{{ error }}</div>
   </div>
 
+  <div class="px-3 pt-3">
+    <button class="btn btn-primary w-100 btn-sm" (click)="openAddSubportfolio()">
+      + Subportfolio
+    </button>
+  </div>
+
+  <app-subportfolio-modal
+    [open]="addSubportfolioOpen"
+    [roots]="roots"
+    (closed)="addSubportfolioOpen = false"
+    (created)="onSubportfolioCreated($event)"
+  ></app-subportfolio-modal>
+
+
   <div class="sidebar-body" *ngIf="!loading && !error">
     <ng-container *ngFor="let root of roots; trackBy: trackById">
       <a

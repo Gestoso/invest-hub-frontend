@@ -1,0 +1,43 @@
+<div class="modal-backdrop fade show" *ngIf="open" (click)="close()"></div>
+
+<div class="modal fade show d-block" tabindex="-1" *ngIf="open">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-dark text-light border border-secondary">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title">Crear subportfolio</h5>
+        <button type="button" class="btn-close btn-close-white" (click)="close()"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="alert alert-danger py-2" *ngIf="error">{{ error }}</div>
+
+        <div [formGroup]="form">
+          <div class="mb-3">
+            <label class="form-label">Parent</label>
+            <select class="form-select" formControlName="parentId">
+              <option value="" disabled>Selecciona un parent</option>
+              <option *ngFor="let p of parentOptions" [value]="p.id">
+                {{ p.label }}
+              </option>
+            </select>
+            <div class="form-text text-muted">
+              El subportfolio se creará dentro del parent seleccionado.
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Nombre</label>
+            <input class="form-control" type="text" formControlName="name" placeholder="Ej: Metales" />
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer border-secondary">
+        <button class="btn btn-outline-light" (click)="close()" [disabled]="loading">Cancelar</button>
+        <button class="btn btn-primary" (click)="save()" [disabled]="form.invalid || loading">
+          {{ loading ? 'Creando...' : 'Crear' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

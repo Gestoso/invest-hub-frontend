@@ -25,4 +25,9 @@ export class PortfoliosService {
       `${this.base}/portfolios/tree`
     );
   }
+  
+  create(payload: { name: string; parentId?: string; currency?: string; sortOrder?: number }) {
+    return this.http.post<{ ok: boolean; portfolio: any }>(`${this.base}/portfolios`, payload);
+  }
+
 }
