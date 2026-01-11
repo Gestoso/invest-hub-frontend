@@ -5,7 +5,19 @@
       Scope: <span class="text-light">{{ data.scope.name }}</span>
     </div>
   </div>
+
+  <button class="btn btn-primary" (click)="openAddPosition()">
+    + Añadir posición
+  </button>
 </div>
+
+<app-position-modal
+  [open]="addPositionOpen"
+  [defaultPortfolioId]="currentScopePortfolioId"
+  (closed)="addPositionOpen = false"
+  (saved)="reloadSummary()"
+></app-position-modal>
+
 
 <!-- Loading -->
 <div class="card border-0 shadow-sm mb-3" *ngIf="loading">

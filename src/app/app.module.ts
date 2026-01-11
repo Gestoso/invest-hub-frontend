@@ -13,6 +13,7 @@ import { RegisterComponent } from './features/auth/pages/register/register.compo
 import { NavbarComponent } from './layout/navbar/navbar.component';
 import { SidebarComponent } from './layout/sidebar/sidebar.component';
 import { NgChartsModule } from 'ng2-charts';
+import { PositionModalComponent } from './shared/components/position-modal/position-modal.component';
 
 @NgModule({
   declarations: [
@@ -21,7 +22,8 @@ import { NgChartsModule } from 'ng2-charts';
     LoginComponent,
     RegisterComponent,
     NavbarComponent,
-    SidebarComponent
+    SidebarComponent,
+    PositionModalComponent
   ],
   imports: [
     BrowserModule,

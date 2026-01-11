@@ -1,0 +1,127 @@
+<!-- Backdrop -->
+<div class="modal-backdrop fade show" *ngIf="open" (click)="close()"></div>
+
+<!-- Modal -->
+<div class="modal fade show d-block" tabindex="-1" *ngIf="open">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-dark text-light border border-secondary">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title">Añadir posición</h5>
+        <button type="button" class="btn-close btn-close-white" (click)="close()"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="alert alert-danger py-2" *ngIf="error">{{ error }}</div>
+
+        <form [formGroup]="form">
+          <!-- Portfolio -->
+          <div class="mb-3">
+            <label class="form-label">Portfolio</label>
+            <select class="form-select" formControlName="portfolioId">
+              <option value="" disabled>Selecciona un subportfolio</option>
+              <option *ngFor="let p of subportfolios" [value]="p.id">
+                {{ p.name }}
+              </option>
+            </select>
+            <div class="form-text text-muted">
+              No se permite añadir posiciones al portfolio raíz.
+            </div>
+          </div>
+
+          <!-- Asset header + button -->
+          <div class="mb-2 d-flex justify-content-between align-items-center">
+            <label class="form-label mb-0">Activo</label>
+            <button
+              type="button"
+              class="btn btn-outline-light btn-sm"
+              (click)="toggleCreateAsset()"
+            >
+              {{ showCreateAsset ? 'Cancelar' : '+ Crear asset' }}
+            </button>
+          </div>
+
+          <!-- Asset select -->
+          <select class="form-select mb-3" formControlName="assetId">
+            <option value="" disabled>Selecciona un activo</option>
+            <option *ngFor="let a of assets" [value]="a.id">
+              {{ a.name }}
+              <span *ngIf="a.symbol">({{ a.symbol }})</span>
+              — {{ a.type }}
+            </option>
+          </select>
+
+          <!-- Mini form: Create asset -->
+          <div *ngIf="showCreateAsset" class="border border-secondary rounded p-3 mb-3">
+            <div class="fw-semibold mb-2">Nuevo asset</div>
+
+            <form [formGroup]="assetForm">
+              <div class="mb-2">
+                <label class="form-label">Tipo</label>
+                <select class="form-select" formControlName="type">
+                  <option value="METAL">METAL</option>
+                  <option value="CRYPTO">CRYPTO</option>
+                  <option value="ETF">ETF</option>
+                  <option value="STOCK">STOCK</option>
+                  <option value="CASH">CASH</option>
+                  <option value="COMMODITY">COMMODITY</option>
+                  <option value="OTHER">OTHER</option>
+                </select>
+              </div>
+
+              <div class="mb-2">
+                <label class="form-label">Nombre</label>
+                <input class="form-control" type="text" formControlName="name" />
+              </div>
+
+              <div class="mb-2">
+                <label class="form-label">Símbolo (opcional)</label>
+                <input class="form-control" type="text" formControlName="symbol" />
+              </div>
+
+              <button
+                type="button"
+                class="btn btn-primary w-100"
+                (click)="createAsset()"
+                [disabled]="assetForm.invalid || loading"
+              >
+                {{ loading ? 'Creando...' : 'Crear asset' }}
+              </button>
+            </form>
+          </div>
+
+          <!-- Value -->
+          <div class="mb-3">
+            <label class="form-label">Valor (EUR)</label>
+            <input
+              class="form-control"
+              type="number"
+              min="0"
+              step="0.01"
+              formControlName="valueAmount"
+            />
+          </div>
+
+          <!-- Notes -->
+          <div class="mb-3">
+            <label class="form-label">Notas (opcional)</label>
+            <input
+              class="form-control"
+              type="text"
+              maxlength="255"
+              formControlName="notes"
+            />
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer border-secondary">
+        <button class="btn btn-outline-light" (click)="close()" [disabled]="loading">
+          Cancelar
+        </button>
+        <button class="btn btn-primary" (click)="save()" [disabled]="form.invalid || loading">
+          {{ loading ? 'Guardando...' : 'Guardar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

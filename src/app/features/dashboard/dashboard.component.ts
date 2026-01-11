@@ -44,6 +44,8 @@ export class DashboardComponent implements OnInit {
     labels: this.pieByPortfolioLabels,
     datasets: [{ data: this.pieByPortfolioData }]
   };
+  addPositionOpen = false;
+  currentScopePortfolioId?: string;
 
   constructor(
   private dash: DashboardService,
@@ -65,6 +67,7 @@ ngOnInit(): void {
     .subscribe({
       next: (res) => {
         this.data = res;
+        this.currentScopePortfolioId = res.scope?.portfolioId;
         this.loading = false;
         this.pieByTypeLabels = res.byType.map(x => x.type);
         this.pieByTypeData = res.byType.map(x => x.total);
@@ -95,4 +98,29 @@ ngOnInit(): void {
     this.auth.logout();
     this.router.navigateByUrl('/login');
   }
+
+  openAddPosition(): void {
+    this.addPositionOpen = true;
+  }
+
+  reloadSummary(): void {
+  this.loading = true;
+
+  // reutiliza la lógica actual que ya lee queryParamMap
+  // solución simple: “simula” un refresh llamando al servicio directamente
+  const portfolioId = this.currentScopePortfolioId;
+
+  this.dash.summary(portfolioId).subscribe({
+      next: (res) => {
+        this.data = res;
+        this.currentScopePortfolioId = res.scope?.portfolioId;
+        this.loading = false;
+      },
+      error: (err) => {
+        this.loading = false;
+        this.error = err?.error?.message || 'Error recargando dashboard';
+      }
+    });
+  }
+
 }
