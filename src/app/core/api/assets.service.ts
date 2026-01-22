@@ -24,4 +24,12 @@ export class AssetsService {
     return this.http.post<any>(`${this.base}/assets`, payload);
   }
 
+  getOrCreateCrypto(symbol: string) {
+    return this.http.post<{ ok: boolean; mode: 'created' | 'existing'; asset: any }>(
+      `${this.base}/assets/crypto`,
+      { symbol }
+    );
+  }
+
+
 }

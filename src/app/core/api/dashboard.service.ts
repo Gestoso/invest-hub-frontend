@@ -10,6 +10,7 @@ export type DashboardSummary = {
   totals: { total: number; positionsCount: number };
   byPortfolio: Array<{ id: string; name: string; parentId: string | null; currency: string; total: number }>;
   byType: Array<{ type: string; total: number }>;
+  byAsset: Array<{ assetId: string; name: string; symbol?: string | null; type: string; total: number }>;
 };
 
 @Injectable({ providedIn: 'root' })

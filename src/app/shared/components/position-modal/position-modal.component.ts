@@ -3,6 +3,7 @@ import { FormBuilder, Validators } from '@angular/forms';
 import { AssetsService, Asset } from '../../../core/api/assets.service';
 import { PortfoliosService, PortfolioNode } from '../../../core/api/portfolios.service';
 import { PositionsService } from '../../../core/api/positions.service';
+import { CryptoCatalogService, CryptoCatalogItem } from '../../../core/api/crypto-catalog.service';
 
 @Component({
   selector: 'app-position-modal',
@@ -20,6 +21,13 @@ export class PositionModalComponent implements OnChanges {
 
   loading = false;
   error = '';
+  isCryptoPortfolioSelected = false;
+
+  cryptos: CryptoCatalogItem[] = [];
+  cryptoSearch = '';
+  filteredCryptos: CryptoCatalogItem[] = [];
+
+  selectedCryptoSymbol: string | null = null; // lo que elegirá el usuario
 
   roots: PortfolioNode[] = [];
   assets: Asset[] = [];
@@ -43,14 +51,28 @@ export class PositionModalComponent implements OnChanges {
     private fb: FormBuilder,
     private assetsService: AssetsService,
     private portfoliosService: PortfoliosService,
-    private positionsService: PositionsService
+    private positionsService: PositionsService,
+    private cryptoCatalog: CryptoCatalogService
   ) {}
+
+
+  private portfolioNameById: Record<string, string> = {};
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['open']?.currentValue === true) {
       this.error = '';
       this.loadData();
-
+      this.cryptoCatalog.list().subscribe({
+        next: (res) => {
+          this.cryptos = res.cryptos || [];
+          this.filteredCryptos = this.cryptos;
+        },
+        error: () => {
+          // no rompemos el modal si falla el catálogo
+          this.cryptos = [];
+          this.filteredCryptos = [];
+        }
+      });
       // set default portfolio si viene
       if (this.defaultPortfolioId) {
         this.form.patchValue({ portfolioId: this.defaultPortfolioId });
@@ -65,6 +87,10 @@ export class PositionModalComponent implements OnChanges {
     this.portfoliosService.tree().subscribe({
       next: (res) => {
         this.roots = res.roots || [];
+        this.portfolioNameById = {};
+        for (const p of this.subportfolios) {
+          this.portfolioNameById[p.id] = p.name;
+        }
         this.subportfolios = this.flattenNonRoot(this.roots);
         this.loading = false;
       },

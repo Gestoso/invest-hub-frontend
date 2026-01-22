@@ -49,22 +49,7 @@
             Portafolio: {{ data.scope.name }}
           </div>
                 <div class="row g-3 mb-4" *ngIf="data && data.totals.total > 0">
-                    <div class="col-12 col-lg-6">
-                        <div class="card border-0 shadow-sm h-100">
-                        <div class="card-body">
-                            <h5 class="mb-3">Distribución por tipo</h5>
-
-                            <canvas
-                            baseChart
-                            [type]="'pie'"
-                            [data]="pieByTypeDataset"
-                            [options]="pieOptions"
-                            ></canvas>
-                        </div>
-                        </div>
-                    </div>
-
-                    <div class="col-12 col-lg-6">
+                    <div class="col-12 col-lg-6" *ngIf="isRootScope">
                         <div class="card border-0 shadow-sm h-100">
                         <div class="card-body">
                             <h5 class="mb-3">Distribución por portafolio</h5>
@@ -78,6 +63,14 @@
                         </div>
                     </div>
                 </div>
+                  <div class="col-12 col-lg-6" *ngIf="!isRootScope">
+                    <div class="card border-0 shadow-sm h-100">
+                      <div class="card-body">
+                        <h5 class="mb-3">Distribución por asset</h5>
+                        <canvas baseChart [type]="'pie'" [data]="pieByAssetDataset" [options]="pieOptions"></canvas>
+                      </div>
+                    </div>
+                  </div>
                 <div class="alert alert-secondary" *ngIf="data && data.totals.total === 0">
                     Aún no hay posiciones con valor para generar gráficos.
                 </div>
