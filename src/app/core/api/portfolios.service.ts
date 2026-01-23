@@ -13,6 +13,7 @@ export type PortfolioNode = {
   createdAt: string;
   updatedAt: string;
   children: PortfolioNode[];
+  category: string;
 };
 
 @Injectable({ providedIn: 'root' })
@@ -26,7 +27,7 @@ export class PortfoliosService {
     );
   }
   
-  create(payload: { name: string; parentId?: string; currency?: string; sortOrder?: number }) {
+  create(payload: { name: string; parentId?: string; category?: string; currency?: string; sortOrder?: number }) {
     return this.http.post<{ ok: boolean; portfolio: any }>(`${this.base}/portfolios`, payload);
   }
 

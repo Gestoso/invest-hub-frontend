@@ -24,7 +24,18 @@
               El subportfolio se creará dentro del parent seleccionado.
             </div>
           </div>
-
+          <div class="mb-3">
+            <label class="form-label">Categoría</label>
+            <select class="form-select" formControlName="category">
+              <option value="GENERAL">GENERAL</option>
+              <option value="CRYPTO">CRYPTO</option>
+              <option value="METALS">METALS</option>
+              <option value="ETF">ETF</option>
+              <option value="STOCKS">STOCKS</option>
+              <option value="CASH">CASH</option>
+              <option value="OTHER">OTHER</option>
+            </select>
+          </div>
           <div class="mb-3">
             <label class="form-label">Nombre</label>
             <input class="form-control" type="text" formControlName="name" placeholder="Ej: Metales" />

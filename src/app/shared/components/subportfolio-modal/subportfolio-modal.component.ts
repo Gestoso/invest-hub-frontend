@@ -21,7 +21,8 @@ export class SubportfolioModalComponent implements OnChanges {
 
   form = this.fb.group({
     name: ['', [Validators.required, Validators.maxLength(120)]],
-    parentId: ['', Validators.required] // ahora obligatorio
+    category: ['GENERAL', Validators.required],
+    parentId: ['', Validators.required]
   });
 
 
@@ -52,10 +53,10 @@ export class SubportfolioModalComponent implements OnChanges {
     this.error = '';
     if (this.form.invalid) return;
 
-    const { name, parentId } = this.form.getRawValue();
+    const { name, parentId, category } = this.form.getRawValue();
 
     this.loading = true;
-    this.portfolios.create({ name: name as string, parentId: parentId as string }).subscribe({
+    this.portfolios.create({ name: name as string, parentId: parentId as string, category: category as string }).subscribe({
       next: (res) => {
         this.loading = false;
         const p = res.portfolio;
