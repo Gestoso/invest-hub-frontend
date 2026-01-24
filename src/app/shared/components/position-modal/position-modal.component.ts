@@ -4,6 +4,7 @@ import { AssetsService, Asset } from '../../../core/api/assets.service';
 import { PortfoliosService, PortfolioNode } from '../../../core/api/portfolios.service';
 import { PositionsService } from '../../../core/api/positions.service';
 import { CryptoCatalogService, CryptoCatalogItem } from '../../../core/api/crypto-catalog.service';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-position-modal',
@@ -60,7 +61,8 @@ export class PositionModalComponent implements OnChanges {
     private assetsService: AssetsService,
     private portfoliosService: PortfoliosService,
     private positionsService: PositionsService,
-    private cryptoCatalog: CryptoCatalogService
+    private cryptoCatalog: CryptoCatalogService,
+    private msg: MessageService
   ) {
     // ✅ Suscripción única al cambio de portfolio
     this.form.get('portfolioId')?.valueChanges.subscribe((id) => {
@@ -345,13 +347,23 @@ export class PositionModalComponent implements OnChanges {
             notes: (notes || undefined) as any
           }).subscribe({
             next: () => {
-              this.loading = false;
-              this.close();
-              this.saved.emit();
-              this.form.reset();
+            this.loading = false; 
+            this.msg.add({
+              severity: 'success',
+              summary: 'Posición guardada',
+              detail: 'Se ha actualizado correctamente'
+            });
+            this.close();
+            this.saved.emit();
+            this.form.reset();
             },
             error: (err) => {
               this.loading = false;
+              this.msg.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: this.error
+              });
               this.error = err?.error?.message || 'Error guardando posición';
             }
           });

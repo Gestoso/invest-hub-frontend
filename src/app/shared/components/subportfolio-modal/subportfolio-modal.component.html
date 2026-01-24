@@ -1,54 +1,52 @@
-<div class="modal-backdrop fade show" *ngIf="open" (click)="close()"></div>
+<p-dialog
+  header="Crear subportfolio"
+  [(visible)]="open"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '420px' }"
+  (onHide)="closed.emit()"
+>
+  <div class="flex flex-column gap-3">
+ 
 
-<div class="modal fade show d-block" tabindex="-1" *ngIf="open">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content bg-dark text-light border border-secondary">
-      <div class="modal-header border-secondary">
-        <h5 class="modal-title">Crear subportfolio</h5>
-        <button type="button" class="btn-close btn-close-white" (click)="close()"></button>
+    <div [formGroup]="form" class="flex flex-column gap-3">
+
+      <div class="flex flex-column gap-1">
+        <label class="text-sm opacity-80">Parent</label>
+        <p-dropdown
+          [options]="parentOptions"
+          optionLabel="label"
+          optionValue="id"
+          formControlName="parentId"
+          placeholder="Selecciona un parent"
+          [filter]="true"
+          filterBy="label"
+        ></p-dropdown>
+        <small class="opacity-60">El subportfolio se creará dentro del parent seleccionado.</small>
       </div>
 
-      <div class="modal-body">
-        <div class="alert alert-danger py-2" *ngIf="error">{{ error }}</div>
-
-        <div [formGroup]="form">
-          <div class="mb-3">
-            <label class="form-label">Parent</label>
-            <select class="form-select" formControlName="parentId">
-              <option value="" disabled>Selecciona un parent</option>
-              <option *ngFor="let p of parentOptions" [value]="p.id">
-                {{ p.label }}
-              </option>
-            </select>
-            <div class="form-text text-muted">
-              El subportfolio se creará dentro del parent seleccionado.
-            </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Categoría</label>
-            <select class="form-select" formControlName="category">
-              <option value="GENERAL">GENERAL</option>
-              <option value="CRYPTO">CRYPTO</option>
-              <option value="METALS">METALS</option>
-              <option value="ETF">ETF</option>
-              <option value="STOCKS">STOCKS</option>
-              <option value="CASH">CASH</option>
-              <option value="OTHER">OTHER</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Nombre</label>
-            <input class="form-control" type="text" formControlName="name" placeholder="Ej: Metales" />
-          </div>
-        </div>
+      <div class="flex flex-column gap-1">
+        <label class="text-sm opacity-80">Categoría</label>
+        <p-dropdown
+          [options]="categoryOptions"
+          optionLabel="label"
+          optionValue="value"
+          formControlName="category"
+        ></p-dropdown>
       </div>
 
-      <div class="modal-footer border-secondary">
-        <button class="btn btn-outline-light" (click)="close()" [disabled]="loading">Cancelar</button>
-        <button class="btn btn-primary" (click)="save()" [disabled]="form.invalid || loading">
-          {{ loading ? 'Creando...' : 'Crear' }}
-        </button>
+      <div class="flex flex-column gap-1">
+        <label class="text-sm opacity-80">Nombre</label>
+        <input pInputText type="text" formControlName="name" placeholder="Ej: Criptomonedas" />
       </div>
+
     </div>
+
+    <div class="flex justify-content-end gap-2 pt-2">
+      <button pButton label="Cancelar" class="p-button-text" (click)="close()" [disabled]="loading"></button>
+      <button pButton label="Crear" icon="pi pi-check" (click)="save()" [loading]="loading" [disabled]="form.invalid"></button>
+    </div>
+
   </div>
-</div>
+</p-dialog>

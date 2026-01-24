@@ -3,8 +3,7 @@ import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-shell',
-  standalone: true,
-  imports: [CommonModule],
+  standalone: false, 
   templateUrl: './shell.component.html',
   styleUrls: ['./shell.component.scss']
 })

@@ -6,6 +6,7 @@ import { switchMap, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import { ChartConfiguration, ChartOptions } from 'chart.js';
 import { PricesService } from '../../core/api/prices.service';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-dashboard',
@@ -37,6 +38,7 @@ export class DashboardComponent implements OnInit {
   // Opciones (dark friendly)
   pieOptions: ChartOptions<'pie'> = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         position: 'bottom',
@@ -67,7 +69,8 @@ export class DashboardComponent implements OnInit {
     private auth: AuthService,
     private router: Router,
     private route: ActivatedRoute,
-    private prices: PricesService
+    private prices: PricesService,
+    private msg: MessageService
   ) {}
 
   ngOnInit(): void {
@@ -89,6 +92,12 @@ export class DashboardComponent implements OnInit {
         error: (err) => {
           this.loading = false;
           this.error = err?.error?.message || 'Error cargando dashboard';
+          this.msg.add({
+          severity: 'error',
+          summary: 'Dashboard',
+          detail: this.error,
+          life: 3500
+          });
           if (err?.status === 401) this.router.navigateByUrl('/login');
         }
       });

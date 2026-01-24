@@ -1,0 +1,38 @@
+:host {
+  display: block;
+}
+
+/* Toolbar PrimeNG */
+:host ::ng-deep .p-toolbar {
+  background: rgba(11, 18, 32, 0.85);
+  backdrop-filter: blur(10px);
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.65rem 1rem;
+}
+
+/* Botones del menú (links) */
+:host ::ng-deep .p-button.p-button-text {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+:host ::ng-deep .p-button.p-button-text:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Botón logout outline */
+:host ::ng-deep .p-button.p-button-outlined {
+  border-color: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.88);
+}
+
+:host ::ng-deep .p-button.p-button-outlined:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Marca */
+:host ::ng-deep .text-xl {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+/* Ajuste para mobile: el toolbar ya es responsive con PrimeFlex */

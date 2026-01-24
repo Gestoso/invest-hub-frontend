@@ -1,37 +1,48 @@
-.sidebar-header {
-  padding: 1rem;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  color: #fff;
-}
-
-.sidebar-body {
-  padding: 0.5rem 0;
-}
-
-.sidebar-children {
-  padding-left: 0.75rem;
-}
-
-.sidebar-item {
+:host {
   display: block;
-  padding: 0.55rem 1rem;
-  color: rgba(255,255,255,0.85);
-  text-decoration: none;
-  border-radius: 0.5rem;
-  margin: 0.15rem 0.5rem;
-
-  &:hover {
-    background: rgba(255,255,255,0.08);
-    color: #fff;
-  }
-
-  &.active {
-    background: rgba(13,110,253,0.25);
-    color: #fff;
-    border: 1px solid rgba(13,110,253,0.35);
-  }
 }
 
-.sidebar-root {
-  font-weight: 600;
+/* Contenedor sidebar (ya lo envuelves con p-3 en el html) */
+:host {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Estilo del PanelMenu */
+:host ::ng-deep .p-panelmenu {
+  border: 0;
+  background: transparent;
+}
+
+/* Header de cada item */
+:host ::ng-deep .p-panelmenu .p-panelmenu-header > a {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  margin-bottom: 0.5rem;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+:host ::ng-deep .p-panelmenu .p-panelmenu-header > a:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Items internos */
+:host ::ng-deep .p-panelmenu .p-menuitem-link {
+  border-radius: 10px;
+  margin: 0.15rem 0;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+:host ::ng-deep .p-panelmenu .p-menuitem-link:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Iconos */
+:host ::ng-deep .p-menuitem-icon {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* Texto pequeño del email */
+:host ::ng-deep .opacity-70 {
+  color: rgba(255, 255, 255, 0.65) !important;
 }

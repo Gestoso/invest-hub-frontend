@@ -1,142 +1,204 @@
-<!-- Backdrop -->
-<div class="modal-backdrop fade show" *ngIf="open" (click)="close()"></div>
+<p-dialog
+  header="Añadir posición"
+  [(visible)]="open"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '520px' }"
+  (onHide)="close()"
+>
+  <div class="flex flex-column gap-3">
+ 
 
-<!-- Modal -->
-<div class="modal fade show d-block" tabindex="-1" *ngIf="open">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content bg-dark text-light border border-secondary">
-      <div class="modal-header border-secondary">
-        <h5 class="modal-title">Añadir posición</h5>
-        <button type="button" class="btn-close btn-close-white" (click)="close()"></button>
+    <div [formGroup]="form" class="flex flex-column gap-3">
+
+      <!-- Portfolio -->
+      <div class="flex flex-column gap-1">
+        <label class="text-sm opacity-80">Portfolio</label>
+
+        <p-dropdown
+          formControlName="portfolioId"
+          [options]="subportfolios"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="Selecciona un subportfolio"
+          [filter]="true"
+          filterBy="name"
+        ></p-dropdown>
+
+        <small class="opacity-60">
+          No se permite añadir posiciones al portfolio raíz.
+        </small>
       </div>
 
-      <div class="modal-body">
-        <div class="alert alert-danger py-2" *ngIf="error">{{ error }}</div>
+      <!-- CRYPTO MODE -->
+      <ng-container *ngIf="isCryptoPortfolioSelected">
+        <div class="flex flex-column gap-1">
+          <label class="text-sm opacity-80">Criptomoneda</label>
 
-        <form [formGroup]="form">
-          <!-- Portfolio -->
-          <div class="mb-3">
-            <label class="form-label">Portfolio</label>
-            <select class="form-select" formControlName="portfolioId">
-              <option value="" disabled>Selecciona un subportfolio</option>
-              <option *ngFor="let p of subportfolios" [value]="p.id">
-                {{ p.name }}
-              </option>
-            </select>
-            <div class="form-text text-muted">
-              No se permite añadir posiciones al portfolio raíz.
-            </div>
-          </div>
-
-          <!-- Asset (NO CRYPTO PORTFOLIO) -->
-          <div *ngIf="!isCryptoPortfolioSelected">
-            <div class="mb-2 d-flex justify-content-between align-items-center">
-              <label class="form-label mb-0">Activo</label>
-              <button type="button" class="btn btn-outline-light btn-sm" (click)="toggleCreateAsset()">
-                {{ showCreateAsset ? 'Cancelar' : '+ Crear asset' }}
-              </button>
-            </div>
-
-            <select class="form-select mb-3" formControlName="assetId">
-              <option value="" disabled>Selecciona un activo</option>
-              <option *ngFor="let a of assetsFiltered" [value]="a.id">
-                {{ a.name }} <span *ngIf="a.symbol">({{ a.symbol }})</span> — {{ a.type }}
-              </option>
-            </select>
-
-            <!-- Mini form: Create asset -->
-            <div *ngIf="showCreateAsset" class="border border-secondary rounded p-3 mb-3">
-              <div class="fw-semibold mb-2">Nuevo asset</div>
-
-              <div [formGroup]="assetForm">
-                <div class="mb-2">
-                  <label class="form-label">Tipo</label>
-                  <select class="form-select" formControlName="type">
-                    <option value="METAL">METAL</option>
-                    <option value="ETF">ETF</option>
-                    <option value="STOCK">STOCK</option>
-                    <option value="CASH">CASH</option>
-                    <option value="COMMODITY">COMMODITY</option>
-                    <option value="OTHER">OTHER</option>
-                  </select>
-                </div>
-
-                <div class="mb-2">
-                  <label class="form-label">Nombre</label>
-                  <input class="form-control" type="text" formControlName="name" />
-                </div>
-
-                <div class="mb-2">
-                  <label class="form-label">Símbolo (opcional)</label>
-                  <input class="form-control" type="text" formControlName="symbol" />
-                </div>
-
-                <button type="button" class="btn btn-primary w-100" (click)="createAsset()" [disabled]="assetForm.invalid || loading">
-                  {{ loading ? 'Creando...' : 'Crear asset' }}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Asset (CRYPTO PORTFOLIO = "Criptomonedas") -->
-          <div *ngIf="isCryptoPortfolioSelected" class="mb-3">
-            <label class="form-label">Criptomoneda</label>
-
-          <input
-            class="form-control mb-2"
-            type="text"
-            placeholder="Buscar (BTC, Ethereum...)"
-            formControlName="cryptoSearch"
-            (input)="filterCryptos()"
-          />
-
-          <select class="form-select" formControlName="cryptoSymbol">
-            <option value="" disabled>Selecciona una cripto</option>
-            <option *ngFor="let c of filteredCryptos" [value]="c.symbol">
-              {{ c.symbol }} — {{ c.name }}
-            </option>
-          </select>
-
-
-            <div class="form-text text-muted">
-              Los assets CRYPTO se crean automáticamente desde el catálogo (no manual).
-            </div>
-          </div>
-
-
-          <!-- Value -->
-          <div class="mb-3">
-            <label class="form-label">Valor (EUR)</label>
+          <span class="p-input-icon-left w-full">
+            <i class="pi pi-search"></i>
             <input
-              class="form-control"
-              type="number"
-              min="0"
-              step="0.01"
-              formControlName="valueAmount"
-            />
-          </div>
-
-          <!-- Notes -->
-          <div class="mb-3">
-            <label class="form-label">Notas (opcional)</label>
-            <input
-              class="form-control"
+              pInputText
+              class="w-full"
               type="text"
-              maxlength="255"
-              formControlName="notes"
+              formControlName="cryptoSearch"
+              placeholder="Buscar (BTC, Ethereum...)"
             />
+          </span>
+
+          <p-dropdown
+            formControlName="cryptoSymbol"
+            [options]="filteredCryptos"
+            optionLabel="name"
+            optionValue="symbol"
+            placeholder="Selecciona una cripto"
+            [filter]="true"
+            filterBy="name,symbol"
+          >
+            <ng-template pTemplate="item" let-c>
+              <div class="flex align-items-center justify-content-between w-full">
+                <span class="font-semibold">{{ c.symbol }}</span>
+                <span class="opacity-70">{{ c.name }}</span>
+              </div>
+            </ng-template>
+
+            <ng-template pTemplate="selectedItem" let-c>
+              <span *ngIf="c">{{ c.symbol }} — {{ c.name }}</span>
+              <span *ngIf="!c" class="opacity-70">Selecciona una cripto</span>
+            </ng-template>
+          </p-dropdown>
+
+          <small class="opacity-60">
+            Los assets CRYPTO se crean automáticamente desde el catálogo.
+          </small>
+        </div>
+      </ng-container>
+
+      <!-- NON-CRYPTO MODE -->
+      <ng-container *ngIf="!isCryptoPortfolioSelected">
+
+        <div class="flex align-items-center justify-content-between">
+          <label class="text-sm opacity-80">Activo</label>
+
+          <button
+            pButton
+            type="button"
+            class="p-button-text p-button-sm"
+            icon="pi pi-plus"
+            label="Nuevo asset"
+            (click)="toggleCreateAsset()"
+          ></button>
+        </div>
+
+        <p-dropdown
+          formControlName="assetId"
+          [options]="assetsFiltered"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="Selecciona un activo"
+          [filter]="true"
+          filterBy="name,symbol,type"
+        >
+          <ng-template pTemplate="item" let-a>
+            <div class="flex align-items-center justify-content-between w-full">
+              <span class="font-semibold">
+                {{ a.name }} <span *ngIf="a.symbol" class="opacity-70">({{ a.symbol }})</span>
+              </span>
+              <span class="opacity-70 text-sm">{{ a.type }}</span>
+            </div>
+          </ng-template>
+        </p-dropdown>
+
+        <!-- Create asset panel -->
+        <div *ngIf="showCreateAsset" class="p-3 border-round surface-border surface-card">
+          <div class="font-semibold mb-2">Nuevo asset</div>
+
+          <div [formGroup]="assetForm" class="flex flex-column gap-3">
+            <div class="flex flex-column gap-1">
+              <label class="text-sm opacity-80">Tipo</label>
+              <p-dropdown
+                formControlName="type"
+                [options]="[
+                  {label:'METAL', value:'METAL'},
+                  {label:'ETF', value:'ETF'},
+                  {label:'STOCK', value:'STOCK'},
+                  {label:'CASH', value:'CASH'},
+                  {label:'COMMODITY', value:'COMMODITY'},
+                  {label:'OTHER', value:'OTHER'}
+                ]"
+                optionLabel="label"
+                optionValue="value"
+              ></p-dropdown>
+            </div>
+
+            <div class="flex flex-column gap-1">
+              <label class="text-sm opacity-80">Nombre</label>
+              <input pInputText type="text" formControlName="name" placeholder="Ej: Oro" />
+            </div>
+
+            <div class="flex flex-column gap-1">
+              <label class="text-sm opacity-80">Símbolo (opcional)</label>
+              <input pInputText type="text" formControlName="symbol" placeholder="Ej: XAU" />
+            </div>
+
+            <button
+              pButton
+              type="button"
+              label="Crear asset"
+              icon="pi pi-check"
+              (click)="createAsset()"
+              [disabled]="assetForm.invalid || loading"
+              [loading]="loading"
+            ></button>
           </div>
-        </form>
+        </div>
+
+      </ng-container>
+
+      <p-divider></p-divider>
+
+      <!-- Value -->
+      <div class="flex flex-column gap-1">
+        <label class="text-sm opacity-80">Valor (EUR)</label>
+        <p-inputNumber
+          formControlName="valueAmount"
+          [min]="0"
+          [minFractionDigits]="2"
+          [maxFractionDigits]="2"
+          mode="decimal"
+          inputStyleClass="w-full"
+        ></p-inputNumber>
       </div>
 
-      <div class="modal-footer border-secondary">
-        <button class="btn btn-outline-light" (click)="close()" [disabled]="loading">
-          Cancelar
-        </button>
-        <button class="btn btn-primary" (click)="save()" [disabled]="form.invalid || loading">
-          {{ loading ? 'Guardando...' : 'Guardar' }}
-        </button>
+      <!-- Notes -->
+      <div class="flex flex-column gap-1">
+        <label class="text-sm opacity-80">Notas (opcional)</label>
+        <input pInputText type="text" formControlName="notes" maxlength="255" />
       </div>
     </div>
+
+    <!-- Footer -->
+    <div class="flex justify-content-end gap-2 pt-2">
+      <button
+        pButton
+        type="button"
+        label="Cancelar"
+        class="p-button-text"
+        (click)="close()"
+        [disabled]="loading"
+      ></button>
+
+      <button
+        pButton
+        type="button"
+        label="Guardar"
+        icon="pi pi-save"
+        (click)="save()"
+        [loading]="loading"
+        [disabled]="form.invalid || loading"
+      ></button>
+    </div>
+
   </div>
-</div>
+</p-dialog>

@@ -1,71 +1,37 @@
-<div class="sidebar-wrap" *ngIf="user$ | async as user">
-  <div class="sidebar-header">
-    <div class="fw-semibold">Portfolios</div>
-    <div class="text-muted small">{{ user.email }}</div>
+<div *ngIf="user$ | async as user" class="p-3">
+  <div class="mb-3">
+    <div class="font-semibold">Portfolios</div>
+    <div class="text-sm opacity-70">{{ user.email }}</div>
   </div>
 
-  <div class="px-3 pb-3">
-    <div *ngIf="loading" class="text-muted small">Cargando...</div>
-    <div *ngIf="error" class="text-danger small">{{ error }}</div>
-  </div>
+  <p-button
+    label="Subportfolio"
+    icon="pi pi-plus"
+    class="w-full mb-3"
+    (onClick)="openAddSubportfolio()"
+  ></p-button>
 
-  <div class="px-3 pt-3">
-    <button class="btn btn-primary w-100 btn-sm" (click)="openAddSubportfolio()">
-      + Subportfolio
-    </button>
-  </div>
+  <p-progressSpinner
+    *ngIf="loading"
+    styleClass="w-2rem h-2rem"
+  ></p-progressSpinner>
+
+  <p-message
+    *ngIf="error"
+    severity="error"
+    [text]="error"
+  ></p-message>
+
+  <p-panelMenu
+    *ngIf="!loading && !error"
+    [model]="menuItems"
+    [multiple]="true"
+  ></p-panelMenu>
 
   <app-subportfolio-modal
     [open]="addSubportfolioOpen"
     [roots]="roots"
     (closed)="addSubportfolioOpen = false"
-    (created)="onSubportfolioCreated($event)"
+    (created)="onSubportfolioCreated()"
   ></app-subportfolio-modal>
-
-
-  <div class="sidebar-body" *ngIf="!loading && !error">
-    <ng-container *ngFor="let root of roots; trackBy: trackById">
-      <a
-        class="sidebar-item sidebar-root"
-        [routerLink]="['/dashboard']"
-        [queryParams]="{ portfolioId: root.id }"
-        routerLinkActive="active"
-        [routerLinkActiveOptions]="{ exact: false }"
-        (click)="closeOnMobile()"
-      >
-        {{ root.name }}
-      </a>
-
-      <div class="sidebar-children" *ngIf="root.children?.length">
-        <ng-container *ngFor="let child of root.children; trackBy: trackById">
-          <a
-            class="sidebar-item"
-            [routerLink]="['/dashboard']"
-            [queryParams]="{ portfolioId: child.id }"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{ exact: false }"
-            (click)="closeOnMobile()"
-          >
-            {{ child.name }}
-          </a>
-
-          <!-- 1 nivel más (simple). Si quieres infinito, lo hacemos recursivo con componente. -->
-          <div class="sidebar-children" *ngIf="child.children?.length">
-            <ng-container *ngFor="let sub of child.children; trackBy: trackById">
-              <a
-                class="sidebar-item"
-                [routerLink]="['/dashboard']"
-                [queryParams]="{ portfolioId: sub.id }"
-                routerLinkActive="active"
-                [routerLinkActiveOptions]="{ exact: false }"
-                (click)="closeOnMobile()"
-              >
-                {{ sub.name }}
-              </a>
-            </ng-container>
-          </div>
-        </ng-container>
-      </div>
-    </ng-container>
-  </div>
 </div>

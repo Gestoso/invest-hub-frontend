@@ -1,22 +1,2 @@
-<app-navbar></app-navbar>
-
-<div class="app-shell">
-  <!-- Sidebar -->
-  <aside class="app-sidebar" [class.open]="(sidebarOpen$ | async) === true">
-    <app-sidebar></app-sidebar>
-  </aside>
-
-  <!-- Overlay (solo móvil) -->
-  <div
-    class="app-overlay"
-    [class.show]="(sidebarOpen$ | async) === true"
-    (click)="closeSidebar()"
-  ></div>
-
-  <!-- Main -->
-  <main class="app-main" (click)="closeSidebar()">
-    <div class="container-fluid py-4">
-      <router-outlet></router-outlet>
-    </div>
-  </main>
-</div>
+<p-toast position="top-center"></p-toast>
+<router-outlet></router-outlet>
