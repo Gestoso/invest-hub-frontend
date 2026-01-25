@@ -3,6 +3,7 @@ import { MenuItem } from 'primeng/api';
 import { AuthService } from '../../core/auth/auth.service';
 import { PortfoliosService } from '../../core/api/portfolios.service';
 import { Router } from '@angular/router';
+import { UiStateService } from 'src/app/core/ui/ui-state.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -22,12 +23,14 @@ export class SidebarComponent implements OnInit {
   constructor(
     private auth: AuthService,
     private portfoliosService: PortfoliosService,
-    private router: Router
+    private router: Router,
+    private ui: UiStateService
   ) {}
 
   ngOnInit(): void {
     this.loadTree();
   }
+
 
   loadTree(): void {
     this.loading = true;
@@ -70,6 +73,6 @@ export class SidebarComponent implements OnInit {
   }
 
   closeOnMobile(): void {
-    // aquí puedes mantener tu lógica actual si usas overlay
+  this.ui.closeSidebar();
   }
 }

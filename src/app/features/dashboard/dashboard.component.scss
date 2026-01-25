@@ -5,25 +5,48 @@
 
 .dash-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+
+  margin-bottom: 1.75rem; // 👈 separación clara con el contenido
+  padding-bottom: 1rem;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.6),
+    rgba(15, 23, 42, 0)
+  );
+  border-radius: 12px;
+  padding: 1rem 1.25rem 1.25rem; 
+}
+
+.dash-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .dash-title {
   font-size: 1.4rem;
   font-weight: 700;
+  letter-spacing: 0.2px;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .dash-sub {
-  margin-top: 0.2rem;
-  font-size: 0.95rem;
-  opacity: 0.75;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.65);
 }
 
 .dash-scope {
-  opacity: 0.95;
   font-weight: 600;
+  color: #a5b4fc; // tono indigo suave (coherente con el theme)
+}
+
+/* Botón */
+.dash-header :host ::ng-deep .p-button {
+  margin-left: 1rem; // 👈 aire respecto al título
 }
 
 .dash-loading {

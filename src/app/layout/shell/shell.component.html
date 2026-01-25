@@ -1,11 +1,18 @@
 <app-navbar></app-navbar>
 
 <div class="app-shell">
-  <aside class="app-sidebar">
+  <aside class="app-sidebar" [class.open]="(sidebarOpen$ | async) === true">
     <app-sidebar></app-sidebar>
   </aside>
 
-  <main class="app-main">
+  <!-- Overlay móvil -->
+  <div
+    class="app-overlay"
+    [class.show]="(sidebarOpen$ | async) === true"
+    (click)="closeSidebar()"
+  ></div>
+
+  <main class="app-main" (click)="closeSidebar()">
     <div class="app-content">
       <router-outlet></router-outlet>
     </div>

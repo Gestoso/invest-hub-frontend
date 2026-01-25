@@ -28,11 +28,12 @@ html, body {
   width: 280px;
   flex: 0 0 280px;
   overflow-y: auto;
+  transition: transform 0.2s ease;
 }
 
 .app-main {
   flex: 1;
-  min-width: 0;     /* 🔥 clave: evita que el contenido fuerce layout raro */
+  min-width: 0;
   width: 100%;
 }
 
@@ -40,16 +41,48 @@ html, body {
   width: 100%;
   height: calc(100vh - 56px);
   overflow: auto;
-  padding: 1.5rem; /* padding general para todas las páginas */
-}
-
-.app-content.no-pad {
-  padding: 0;
+  padding: 1.5rem;
 }
 
 /* Overlay hidden by default */
 .app-overlay {
   display: none;
+}
+
+/* Mobile: sidebar off-canvas */
+@media (max-width: 991.98px) {
+  .app-sidebar {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    height: calc(100vh - 56px);
+    transform: translateX(-100%);
+    z-index: 1050;
+    background: #0b1220; /* asegura fondo */
+  }
+
+  .app-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .app-overlay {
+    display: block;
+    position: fixed;
+    top: 56px;
+    left: 0;
+    width: 100%;
+    height: calc(100vh - 56px);
+    background: rgba(0, 0, 0, 0.55);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 1040;
+  }
+
+  .app-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 .p-card,
@@ -67,41 +100,7 @@ html, body {
 .p-toast-message {
   border-radius: 12px;
 }
-
-/* Mobile behavior */
-@media (max-width: 991.98px) { // < lg
-  .app-sidebar {
-    position: fixed;
-    top: 56px; // debajo navbar
-    left: 0;
-    height: calc(100vh - 56px);
-    transform: translateX(-100%);
-    transition: transform 0.2s ease;
-    z-index: 1050;
-  }
-
-  .app-sidebar.open {
-    transform: translateX(0);
-  }
-
-  .app-overlay {
-    display: block;
-    position: fixed;
-    top: 56px;
-    left: 0;
-    width: 100%;
-    height: calc(100vh - 56px);
-    background: rgba(0,0,0,0.5);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease;
-    z-index: 1040;
-  }
-
-  .app-overlay.show {
-    opacity: 1;
-    pointer-events: auto;
-  }
+ 
   .card {
     border-radius: 14px;
   }
@@ -110,5 +109,5 @@ html, body {
     border-radius: 12px;
     overflow: hidden;
   }
-}
+
 
