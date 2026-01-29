@@ -32,6 +32,7 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { DividerModule } from 'primeng/divider';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
+import { SelectButtonModule } from 'primeng/selectbutton';
 
 @NgModule({
   declarations: [
@@ -68,7 +69,7 @@ import { MessageService } from 'primeng/api';
     InputNumberModule,
     DividerModule,
     ToastModule,
-    
+    SelectButtonModule
   ],
   providers: [
     {

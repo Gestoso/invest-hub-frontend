@@ -8,7 +8,6 @@
   (onHide)="close()"
 >
   <div class="flex flex-column gap-3">
- 
 
     <div [formGroup]="form" class="flex flex-column gap-3">
 
@@ -72,6 +71,17 @@
           <small class="opacity-60">
             Los assets CRYPTO se crean automáticamente desde el catálogo.
           </small>
+        </div>
+
+        <!-- ✅ Nuevo: valueMode selector solo en CRYPTO -->
+        <div class="flex flex-column gap-1">
+          <label class="text-sm opacity-80">Tipo de posición</label>
+          <p-selectButton
+            formControlName="valueMode"
+            [options]="valueModeOptions"
+            optionLabel="label"
+            optionValue="value"
+          ></p-selectButton>
         </div>
       </ng-container>
 
@@ -158,18 +168,72 @@
 
       <p-divider></p-divider>
 
-      <!-- Value -->
+      <!-- ✅ ADD/SET -->
       <div class="flex flex-column gap-1">
-        <label class="text-sm opacity-80">Valor (EUR)</label>
-        <p-inputNumber
-          formControlName="valueAmount"
-          [min]="0"
-          [minFractionDigits]="2"
-          [maxFractionDigits]="2"
-          mode="decimal"
-          inputStyleClass="w-full"
-        ></p-inputNumber>
+        <label class="text-sm opacity-80">Aplicar</label>
+        <p-dropdown
+          formControlName="mode"
+          [options]="upsertModeOptions"
+          optionLabel="label"
+          optionValue="value"
+        ></p-dropdown>
       </div>
+
+      <!-- MANUAL VALUE -->
+      <ng-container *ngIf="(!isCryptoPortfolioSelected) || (isCryptoPortfolioSelected && form.value.valueMode === 'MANUAL')">
+        <div class="flex flex-column gap-1">
+          <label class="text-sm opacity-80">Valor (EUR)</label>
+          <p-inputNumber
+            formControlName="valueAmount"
+            [min]="0"
+            [minFractionDigits]="2"
+            [maxFractionDigits]="2"
+            mode="decimal"
+            inputStyleClass="w-full"
+          ></p-inputNumber>
+        </div>
+      </ng-container>
+ 
+      <!-- MARKET VALUE -->
+      <ng-container *ngIf="isCryptoPortfolioSelected && form.value.valueMode === 'MARKET'">
+        <div class="flex flex-column gap-1">
+          <label class="text-sm opacity-80">Cantidad</label>
+          <p-inputNumber
+            formControlName="quantity"
+            [minFractionDigits]="0"
+            [maxFractionDigits]="12"
+            mode="decimal"
+            inputStyleClass="w-full"
+          ></p-inputNumber>
+
+          <small class="opacity-60">
+            Introduces <b>cantidad</b> (BTC/ETH...). El valor total se calculará automáticamente con el
+            <b>precio en tiempo real</b> en el dashboard.
+            <br />
+            El <b>coste</b> es opcional y se usará más adelante para calcular rentabilidad.
+          </small>
+        </div>
+
+        <div class="flex flex-column gap-1">
+          <label class="text-sm opacity-80">Coste (opcional)</label>
+          <p-inputNumber
+            formControlName="costAmount"
+            [minFractionDigits]="2"
+            [maxFractionDigits]="2"
+            mode="decimal"
+            inputStyleClass="w-full"
+          ></p-inputNumber>
+        </div>
+
+        <div class="flex flex-column gap-1">
+          <label class="text-sm opacity-80">Moneda coste</label>
+          <p-dropdown
+            formControlName="costCurrency"
+            [options]="['EUR','USD','GBP','JPY','CHF']"
+            placeholder="EUR"
+          ></p-dropdown>
+        </div>
+      </ng-container>
 
       <!-- Notes -->
       <div class="flex flex-column gap-1">

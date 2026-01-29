@@ -1,37 +1,32 @@
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { environment } from '../../../environments/environment';
-import { Observable } from 'rxjs';
+// src/app/core/api/positions.service.ts
 
-type UpsertPositionResponse = {
-  ok: boolean;
-  mode: 'created' | 'updated';
-  position: {
-    id: string;
-    portfolioId: string;
-    assetId: string;
-    valueAmount: number;
-    valueCurrency: string;
-    notes?: string | null;
-    createdAt: string;
-    updatedAt: string;
-  };
-};
+import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import {
+  UpsertPositionRequest,
+  UpsertPositionResponse,
+} from '../../shared/models/positions.models';
 
 @Injectable({ providedIn: 'root' })
 export class PositionsService {
-  private base = environment.apiUrl;
+  private readonly baseUrl = 'http://localhost:3000/api/v1';
+
   constructor(private http: HttpClient) {}
 
-  upsertPosition(portfolioId: string, payload: {
-    assetId: string;
-    valueAmount: number;
-    valueCurrency?: string;
-    notes?: string;
-  }): Observable<UpsertPositionResponse> {
+  upsertPosition(
+    portfolioId: string,
+    payload: UpsertPositionRequest
+  ): Observable<UpsertPositionResponse> {
     return this.http.post<UpsertPositionResponse>(
-      `${this.base}/portfolios/${portfolioId}/positions`,
+      `${this.baseUrl}/portfolios/${portfolioId}/positions`,
       payload
+    );
+  }
+
+  listPositions(portfolioId: string) {
+    return this.http.get<{ ok: boolean; positions: any[] }>(
+      `${this.baseUrl}/portfolios/${portfolioId}/positions`
     );
   }
 }

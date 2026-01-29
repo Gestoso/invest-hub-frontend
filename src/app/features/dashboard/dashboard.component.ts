@@ -7,6 +7,7 @@ import { catchError, map, tap } from 'rxjs/operators';
 import { ChartConfiguration, ChartOptions } from 'chart.js';
 import { PricesService } from '../../core/api/prices.service';
 import { MessageService } from 'primeng/api';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-dashboard',
@@ -17,7 +18,17 @@ export class DashboardComponent implements OnInit {
   loading = false;
   error = '';
   data: DashboardSummary | null = null;
-
+  currencyOptions: { label: string; value: string }[] = [];
+  currencySymbol = "€"; // fallback
+  fxTooltip = "";
+  private symbolMap: Record<string, string> = {
+    EUR: "€",
+    USD: "$",
+    GBP: "£",
+    JPY: "¥",
+    CHF: "CHF",
+  };
+  selectedCurrency!: string;
   isRootScope = true; // por defecto
   currentScopePortfolioId?: string;
 
@@ -71,7 +82,8 @@ export class DashboardComponent implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private prices: PricesService,
-    private msg: MessageService
+    private msg: MessageService,
+    private http: HttpClient
   ) {}
 
   ngOnInit(): void {
@@ -89,6 +101,9 @@ export class DashboardComponent implements OnInit {
       .subscribe({
         next: () => {
           this.loading = false;
+          this.loadCurrencies();
+          this.loadUserCurrency();
+          this.reloadSummary();
         },
         error: (err) => {
           this.loading = false;
@@ -113,6 +128,8 @@ export class DashboardComponent implements OnInit {
       tap((res) => {
         // 1) Estado principal
         this.data = res;
+        this.currencySymbol = this.getSymbol(this.data?.currency);
+        this.fxTooltip = this.formatFxTooltip(this.data);
         this.currentScopePortfolioId = res.scope?.portfolioId;
 
         // 2) Detectar root/subportfolio
@@ -208,4 +225,59 @@ export class DashboardComponent implements OnInit {
       }
     });
   }
+
+  loadCurrencies() {
+  this.http.get<any>("/api/v1/fx/currencies").subscribe({
+    next: (res) => {
+      this.currencyOptions = res.currencies.map((c: string) => ({
+        label: c,
+        value: c,
+      }));
+    },
+  });
+}
+
+loadUserCurrency() {
+  this.http.get<any>("/api/v1/users/me/display-currency").subscribe({
+    next: (res) => {
+      this.selectedCurrency = res.currency;
+    },
+  });
+}
+
+onCurrencyChange(currency: string) {
+  this.http
+    .put("/api/v1/users/me/display-currency", { currency })
+    .subscribe({
+      next: () => {
+        this.reloadSummary(); // 🔥 clave
+      },
+    });
+}
+
+getSymbol(code?: string): string {
+const c = String(code || "EUR").toUpperCase();
+return this.symbolMap[c] ?? c;
+}
+
+
+private formatFxTooltip(data: any) {
+if (!data?.fx) return "";
+
+
+const fetched = data.fx.fetchedAt ? new Date(data.fx.fetchedAt) : null;
+const fetchedStr = fetched
+? fetched.toLocaleString() // se verá en local del navegador
+: "N/A";
+
+
+// Ej: "FX: cache · Updated: 28/01/2026, 12:00:00 · Rate: 1 EUR = 1.08 USD"
+const base = data.baseCurrency || "EUR";
+const cur = data.currency || "EUR";
+const rate = data.fx.rate;
+
+
+return `FX: ${data.fx.source} · Updated: ${fetchedStr} · Rate: 1 ${base} = ${rate} ${cur}`;
+}
+
 }

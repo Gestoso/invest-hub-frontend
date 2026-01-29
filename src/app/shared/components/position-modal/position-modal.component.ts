@@ -1,10 +1,11 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
-import { FormBuilder, Validators, AbstractControl } from '@angular/forms';
+import { FormBuilder, Validators } from '@angular/forms';
 import { AssetsService, Asset } from '../../../core/api/assets.service';
 import { PortfoliosService, PortfolioNode } from '../../../core/api/portfolios.service';
 import { PositionsService } from '../../../core/api/positions.service';
 import { CryptoCatalogService, CryptoCatalogItem } from '../../../core/api/crypto-catalog.service';
-import { MessageService } from 'primeng/api';
+import { MessageService } from 'primeng/api'; 
+import { PositionValueMode, UpsertMode } from '../../../shared/models/positions.models';
 
 @Component({
   selector: 'app-position-modal',
@@ -36,12 +37,38 @@ export class PositionModalComponent implements OnChanges {
   assetsAll: Asset[] = [];
   assetsFiltered: Asset[] = [];
 
+  // UI options
+  valueModeOptions = [
+    { label: 'Manual (€)', value: 'MANUAL' as PositionValueMode },
+    { label: 'Market (cantidad)', value: 'MARKET' as PositionValueMode },
+  ];
+
+  upsertModeOptions = [
+    { label: 'Sumar (ADD)', value: 'ADD' as UpsertMode },
+    { label: 'Reemplazar (SET)', value: 'SET' as UpsertMode },
+  ];
+
   // Main form
   form = this.fb.group({
     portfolioId: ['', Validators.required],
+
+    // Non-crypto UI
     assetId: ['', Validators.required],
-    valueAmount: [null as any, [Validators.required, Validators.min(0.01)]],
+
+    // General
     notes: [''],
+    mode: ['ADD' as UpsertMode, Validators.required],
+
+    // ✅ NEW: valuation mode
+    valueMode: ['MANUAL' as PositionValueMode, Validators.required],
+
+    // MANUAL
+    valueAmount: [null as any],
+
+    // MARKET (crypto)
+    quantity: [null as any],
+    costAmount: [null as any],
+    costCurrency: ['EUR'],
 
     // crypto UI (reactive)
     cryptoSearch: [''],
@@ -64,14 +91,19 @@ export class PositionModalComponent implements OnChanges {
     private cryptoCatalog: CryptoCatalogService,
     private msg: MessageService
   ) {
-    // ✅ Suscripción única al cambio de portfolio
+    // ✅ Portfolio change => crypto/non-crypto mode
     this.form.get('portfolioId')?.valueChanges.subscribe((id) => {
       this.applyModeByPortfolioId(id as string);
     });
 
-    // ✅ Filtrado crypto al escribir
+    // ✅ Crypto search filter
     this.form.get('cryptoSearch')?.valueChanges.subscribe(() => {
       this.filterCryptos();
+    });
+
+    // ✅ valueMode change => validators for valueAmount vs quantity
+    this.form.get('valueMode')?.valueChanges.subscribe(() => {
+      this.applyValueValidators();
     });
   }
 
@@ -86,11 +118,23 @@ export class PositionModalComponent implements OnChanges {
       this.filteredCryptos = this.cryptos;
 
       // Limpieza campos crypto
-      this.form.patchValue({ cryptoSearch: '', cryptoSymbol: '' }, { emitEvent: false });
+      this.form.patchValue(
+        {
+          cryptoSearch: '',
+          cryptoSymbol: '',
+          valueMode: 'MANUAL',
+          mode: 'ADD',
+          quantity: null,
+          costAmount: null,
+          costCurrency: 'EUR',
+          valueAmount: null,
+          notes: '',
+        },
+        { emitEvent: false }
+      );
 
-      // Importante: al abrir, dejamos validadores en modo NO-CRYPTO por defecto.
-      // Luego se reajustan cuando sepamos category real.
-      this.setValidatorsForMode(false);
+      // Validadores base (NO-CRYPTO por defecto)
+      this.setValidatorsForPortfolioMode(false);
 
       // Si viene defaultPortfolioId lo seteo ya (disparará valueChanges)
       if (this.defaultPortfolioId) {
@@ -132,7 +176,7 @@ export class PositionModalComponent implements OnChanges {
           this.portfolioCategoryById[p.id] = p.category;
         }
 
-        // ✅ Re-aplicar modo una vez ya tenemos category map (clave del bug)
+        // ✅ Re-aplicar modo una vez ya tenemos category map
         const currentId = this.form.get('portfolioId')?.value as string;
         if (currentId) {
           this.applyModeByPortfolioId(currentId, { reapplyValidators: true });
@@ -159,18 +203,14 @@ export class PositionModalComponent implements OnChanges {
   }
 
   // -----------------------------
-  // Mode + Validators
+  // Portfolio mode + validators
   // -----------------------------
   private applyModeByPortfolioId(portfolioId: string, opts?: { reapplyValidators?: boolean }): void {
     const category = this.portfolioCategoryById[portfolioId];
 
     // Si aún no tenemos category (tree no cargó), no cambiamos el modo.
-    // Cuando llegue el tree, loadData() lo reaplica.
     if (!category) {
-      if (opts?.reapplyValidators) {
-        // Si nos piden reaplicar y no hay category, dejamos modo NO-CRYPTO
-        this.setValidatorsForMode(false);
-      }
+      if (opts?.reapplyValidators) this.setValidatorsForPortfolioMode(false);
       return;
     }
 
@@ -180,10 +220,18 @@ export class PositionModalComponent implements OnChanges {
     // Apaga creación manual si es crypto
     if (isCrypto) this.showCreateAsset = false;
 
-    // Ajusta validadores según modo
-    this.setValidatorsForMode(isCrypto);
+    // Ajusta validadores según portfolio mode (assetId vs cryptoSymbol)
+    this.setValidatorsForPortfolioMode(isCrypto);
 
-    // Reset de campos crypto cada vez que cambia portfolio (evita estados colgados)
+    // Si NO es crypto, forzamos valueMode MANUAL
+    if (!isCrypto) {
+      this.form.patchValue({ valueMode: 'MANUAL' }, { emitEvent: false });
+    }
+
+    // Ajusta validadores valueAmount/quantity según valueMode actual
+    this.applyValueValidators();
+
+    // Reset campos crypto al cambiar portfolio
     this.form.patchValue({ cryptoSearch: '', cryptoSymbol: '' }, { emitEvent: false });
     this.filteredCryptos = this.cryptos;
 
@@ -191,7 +239,7 @@ export class PositionModalComponent implements OnChanges {
     this.applyAssetsFilter();
   }
 
-  private setValidatorsForMode(isCrypto: boolean): void {
+  private setValidatorsForPortfolioMode(isCrypto: boolean): void {
     const assetIdCtrl = this.form.get('assetId');
     const cryptoSymbolCtrl = this.form.get('cryptoSymbol');
 
@@ -213,6 +261,34 @@ export class PositionModalComponent implements OnChanges {
 
     assetIdCtrl.updateValueAndValidity({ emitEvent: false });
     cryptoSymbolCtrl.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private applyValueValidators(): void {
+    const valueMode = (this.form.get('valueMode')?.value || 'MANUAL') as PositionValueMode;
+
+    const valueAmountCtrl = this.form.get('valueAmount');
+    const quantityCtrl = this.form.get('quantity');
+
+    if (!valueAmountCtrl || !quantityCtrl) return;
+
+    // Reset
+    valueAmountCtrl.clearValidators();
+    quantityCtrl.clearValidators();
+
+    if (!this.isCryptoPortfolioSelected) {
+      // NO-CRYPTO => siempre MANUAL por dinero
+      valueAmountCtrl.setValidators([Validators.required, Validators.min(0.01)]);
+    } else {
+      // CRYPTO => depende de valueMode
+      if (valueMode === 'MANUAL') {
+        valueAmountCtrl.setValidators([Validators.required, Validators.min(0.01)]);
+      } else {
+        quantityCtrl.setValidators([Validators.required, Validators.min(0.00000001)]);
+      }
+    }
+
+    valueAmountCtrl.updateValueAndValidity({ emitEvent: false });
+    quantityCtrl.updateValueAndValidity({ emitEvent: false });
   }
 
   // -----------------------------
@@ -315,15 +391,20 @@ export class PositionModalComponent implements OnChanges {
   save(): void {
     this.error = '';
 
-    // ⚠️ Importante: en CRYPTO el form puede estar "invalid" si assetId sigue required.
-    // Ya lo manejamos con setValidatorsForMode(), así que esto debería funcionar.
     if (this.form.invalid) return;
 
-    const { portfolioId, assetId, valueAmount, notes } = this.form.getRawValue();
-    const cryptoSymbol = (this.form.get('cryptoSymbol')?.value || '').toString().trim();
+    const v = this.form.getRawValue();
+    const portfolioId = v.portfolioId as string;
+    const notes = (v.notes || undefined) as any;
+    const upsertMode = (v.mode || 'ADD') as UpsertMode;
 
-    // CRYPTO portfolio: catálogo
+    // -----------------------------
+    // CRYPTO portfolio: catálogo + getOrCreateCrypto
+    // -----------------------------
     if (this.isCryptoPortfolioSelected) {
+      const cryptoSymbol = (this.form.get('cryptoSymbol')?.value || '').toString().trim();
+      const valueMode = (v.valueMode || 'MANUAL') as PositionValueMode;
+
       if (!cryptoSymbol) {
         this.error = 'Selecciona una criptomoneda del catálogo.';
         return;
@@ -340,31 +421,45 @@ export class PositionModalComponent implements OnChanges {
             return;
           }
 
-          this.positionsService.upsertPosition(portfolioId as string, {
+          // Payload a backend (soporta MANUAL/MARKET)
+          const payload: any = {
             assetId: createdAssetId,
-            valueAmount: Number(valueAmount),
-            valueCurrency: 'EUR',
-            notes: (notes || undefined) as any
-          }).subscribe({
+            mode: upsertMode,
+            valueMode,
+            notes,
+          };
+
+          if (valueMode === 'MANUAL') {
+            payload.valueAmount = Number(v.valueAmount);
+            payload.valueCurrency = 'EUR';
+          } else {
+            payload.quantity = Number(v.quantity);
+            if (v.costAmount != null && v.costAmount !== '') {
+              payload.costAmount = Number(v.costAmount);
+              payload.costCurrency = (v.costCurrency || 'EUR');
+            }
+          }
+
+          this.positionsService.upsertPosition(portfolioId, payload).subscribe({
             next: () => {
-            this.loading = false; 
-            this.msg.add({
-              severity: 'success',
-              summary: 'Posición guardada',
-              detail: 'Se ha actualizado correctamente'
-            });
-            this.close();
-            this.saved.emit();
-            this.form.reset();
+              this.loading = false;
+              this.msg.add({
+                severity: 'success',
+                summary: 'Posición guardada',
+                detail: 'Se ha actualizado correctamente'
+              });
+              this.close();
+              this.saved.emit();
+              this.form.reset();
             },
             error: (err) => {
               this.loading = false;
+              this.error = err?.error?.message || 'Error guardando posición';
               this.msg.add({
                 severity: 'error',
                 summary: 'Error',
                 detail: this.error
               });
-              this.error = err?.error?.message || 'Error guardando posición';
             }
           });
         },
@@ -377,14 +472,19 @@ export class PositionModalComponent implements OnChanges {
       return;
     }
 
-    // NO-CRYPTO portfolio: assetId manual
+    // -----------------------------
+    // NO-CRYPTO portfolio: assetId manual (solo MANUAL)
+    // -----------------------------
     this.loading = true;
-    this.positionsService.upsertPosition(portfolioId as string, {
-      assetId: assetId as string,
-      valueAmount: Number(valueAmount),
+
+    this.positionsService.upsertPosition(portfolioId, {
+      assetId: v.assetId as string,
+      mode: upsertMode,
+      valueMode: 'MANUAL',
+      valueAmount: Number(v.valueAmount),
       valueCurrency: 'EUR',
-      notes: (notes || undefined) as any
-    }).subscribe({
+      notes
+    } as any).subscribe({
       next: () => {
         this.loading = false;
         this.close();

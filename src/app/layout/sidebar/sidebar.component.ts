@@ -73,6 +73,6 @@ export class SidebarComponent implements OnInit {
   }
 
   closeOnMobile(): void {
-  this.ui.closeSidebar();
+    this.ui.closeSidebar();
   }
 }
