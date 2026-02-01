@@ -11,6 +11,10 @@
     [class.show]="(sidebarOpen$ | async) === true"
     (click)="closeSidebar()"
   ></div>
+<a routerLink="/logs" routerLinkActive="active" class="nav-link">
+  <i class="pi pi-list"></i>
+  <span>Logs</span>
+</a>
 
   <main class="app-main" (click)="closeSidebar()">
     <div class="app-content">

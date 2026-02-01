@@ -33,6 +33,8 @@ import { DividerModule } from 'primeng/divider';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { SelectButtonModule } from 'primeng/selectbutton';
+import { LogsComponent } from './features/logs/logs.component';
+import { Tag, TagModule } from 'primeng/tag';
 
 @NgModule({
   declarations: [
@@ -44,7 +46,8 @@ import { SelectButtonModule } from 'primeng/selectbutton';
     SidebarComponent,
     PositionModalComponent,
     SubportfolioModalComponent,
-    ShellComponent
+    ShellComponent,
+    LogsComponent
   ],
   imports: [
     BrowserModule,
@@ -69,7 +72,8 @@ import { SelectButtonModule } from 'primeng/selectbutton';
     InputNumberModule,
     DividerModule,
     ToastModule,
-    SelectButtonModule
+    SelectButtonModule,
+    TagModule
   ],
   providers: [
     {
