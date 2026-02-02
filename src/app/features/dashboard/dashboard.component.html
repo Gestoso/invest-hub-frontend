@@ -120,6 +120,32 @@
       <div class="card-title">
         {{ isRootScope ? 'Top subportfolios' : 'Top assets' }}
       </div>
+      <!-- Controls: solo en subportfolio (Top assets) -->
+      <div *ngIf="!isRootScope" class="flex align-items-center justify-content-between mb-2">
+        <div class="flex align-items-center gap-2">
+          <span class="text-sm opacity-70">Ordenar por</span>
+
+          <p-dropdown
+            [options]="sortOptions"
+            [(ngModel)]="sortBy"
+            optionLabel="label"
+            optionValue="value"
+            styleClass="p-dropdown-sm"
+            [style]="{ width: '170px' }"
+          ></p-dropdown>
+
+          <button
+            pButton
+            type="button"
+            class="p-button-sm p-button-text"
+            (click)="toggleSortDir()"
+            [pTooltip]="sortDir === 'desc' ? 'Mayor → menor' : 'Menor → mayor'"
+            tooltipPosition="top"
+          >
+            <i class="pi" [ngClass]="sortDir === 'desc' ? 'pi-sort-amount-down' : 'pi-sort-amount-up'"></i>
+          </button>
+        </div>
+      </div>
 
       <!-- ROOT: top subportfolios -->
       <p-table
@@ -148,14 +174,18 @@
       </p-table>
 
       <!-- SUBPORTFOLIO: top assets -->
-      <p-table
-        *ngIf="!isRootScope"
-        [value]="data.byAsset"
-        styleClass="p-datatable-sm"
-      >
+        <p-table
+          *ngIf="!isRootScope"
+          [value]="topAssetsSorted"
+          styleClass="p-datatable-sm"
+        >
+
         <ng-template pTemplate="header">
           <tr>
             <th>Asset</th>
+            <th *ngIf="sortBy === 'qty'" class="text-right">Cantidad</th>
+            <th *ngIf="sortBy === 'value'" class="text-right">Valor</th>
+            <th *ngIf="sortBy === 'price'" class="text-right">Precio</th>
             <th class="text-right">%</th>
           </tr>
         </ng-template>
@@ -165,8 +195,25 @@
             <td class="font-semibold">
               {{ row.symbol || row.name }}
             </td>
+            <td *ngIf="sortBy === 'qty'" class="text-right">
+            <ng-container *ngIf="row.quantity !== null; else noQty">
+              {{ row.quantity | number:'1.0-6' }}
+            </ng-container>
+            <ng-template #noQty>—</ng-template>
+          </td>
+
+          <td *ngIf="sortBy === 'value'" class="text-right">
+            {{ currencySymbol }}{{ row.valueAmount | number:'1.2-2' }}
+          </td>
+
+          <td *ngIf="sortBy === 'price'" class="text-right">
+            <ng-container *ngIf="row.unitPrice !== null; else noPrice">
+              {{ currencySymbol }}{{ row.unitPrice | number:'1.2-2' }}
+            </ng-container>
+            <ng-template #noPrice>—</ng-template>
+          </td>
             <td class="text-right">
-              {{ (row.total / data.totals.total * 100) | number:'1.0-1' }}%
+              {{ row.weightPct | number:'1.0-1' }}%
             </td>
           </tr>
         </ng-template>

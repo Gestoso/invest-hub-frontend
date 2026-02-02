@@ -9,12 +9,70 @@ import { PricesService } from '../../core/api/prices.service';
 import { MessageService } from 'primeng/api';
 import { HttpClient } from '@angular/common/http';
 
+type SortBy = 'pct' | 'qty' | 'value' | 'price';
+
+type SortDir = 'desc' | 'asc';
+
+interface TopAssetRow {
+  assetId?: string;
+  name: string;
+  symbol?: string;
+  type?: string;
+  providerRef?: string;
+
+  valueAmount: number;     // total monetario de ese asset en el portfolio
+  weightPct: number;       // % del total
+  quantity: number | null; // unidades (calculadas si hay precio)
+  unitPrice: number | null; // ✅ precio unitario (calculado)
+}
+
+
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
+
 export class DashboardComponent implements OnInit {
+
+  topAssets: TopAssetRow[] = [];
+
+  sortBy: SortBy = 'pct';
+  sortDir: SortDir = 'desc';
+
+sortOptions = [
+  { label: '% del portfolio', value: 'pct' },
+  { label: 'Cantidad', value: 'qty' },
+  { label: 'Valor total', value: 'value' },   // (antes “Valor”)
+  { label: 'Precio', value: 'price' },        // ✅ nuevo
+];
+
+
+  get topAssetsSorted(): TopAssetRow[] {
+    const list = [...this.topAssets];
+
+    const keyFn = (a: TopAssetRow) => {
+      switch (this.sortBy) {
+        case 'pct': return a.weightPct ?? 0;
+        case 'qty': return a.quantity ?? -1;
+        case 'value': return a.valueAmount ?? 0;
+        case 'price': return a.unitPrice ?? -1;
+      }
+    };
+
+    list.sort((a, b) => {
+      const diff = keyFn(a) - keyFn(b);
+      return this.sortDir === 'asc' ? diff : -diff;
+    });
+
+    return list;
+  }
+
+  toggleSortDir() {
+    this.sortDir = this.sortDir === 'desc' ? 'asc' : 'desc';
+  }
+
+
   loading = false;
   error = '';
   data: DashboardSummary | null = null;
@@ -127,7 +185,26 @@ export class DashboardComponent implements OnInit {
     return this.dash.summary(portfolioId).pipe(
       tap((res) => {
         // 1) Estado principal
-        this.data = res;
+        this.data = res; 
+        const grandTotal = res?.totals?.total ?? 0;
+
+        this.topAssets = (res.byAsset || []).map((a: any) => {
+          const valueAmount = Number(a.total ?? 0);
+          const weightPct = grandTotal > 0 ? (valueAmount / grandTotal) * 100 : 0;
+
+          return {
+            assetId: a.assetId,
+            name: a.name,
+            symbol: a.symbol,
+            type: a.type,
+            providerRef: a.providerRef,
+            valueAmount,
+            weightPct,
+            unitPrice: null,
+            quantity: null,
+          } as TopAssetRow;
+        });
+
         this.currencySymbol = this.getSymbol(this.data?.currency);
         this.fxTooltip = this.formatFxTooltip(this.data);
         this.currentScopePortfolioId = res.scope?.portfolioId;
@@ -162,6 +239,25 @@ export class DashboardComponent implements OnInit {
 
         // 4) Reset precios al cambiar scope (para que no se queden precios “viejos”)
         this.cryptoPriceMap = {};
+        // Actualizamos quantity para cryptos (si price disponible)
+this.topAssets = this.topAssets.map(row => {
+  if (row.type !== 'CRYPTO') return { ...row, unitPrice: null, quantity: null };
+
+  const ref = String(row.providerRef || '').trim().toLowerCase();
+  const price = this.cryptoPriceMap[ref];
+
+  if (!price || price <= 0) {
+    return { ...row, unitPrice: null, quantity: null };
+  }
+
+  return {
+    ...row,
+    unitPrice: price,
+    quantity: row.valueAmount / price,
+  };
+});
+
+
       }),
 
       // 5) Cargar precios crypto (si hay providerRef)
@@ -179,14 +275,41 @@ export class DashboardComponent implements OnInit {
           return of(null);
         }
 
-        return this.prices.getCryptoPrices(uniqueRefs, 'eur').pipe(
+          const vs = String(res.currency || 'EUR').toLowerCase();
+          return this.prices.getCryptoPrices(uniqueRefs, vs).pipe(
           tap((p) => {
-            const map: Record<string, number | null> = {};
+            const map: any = (p as any)?.data ?? (p as any);
             for (const ref of uniqueRefs) {
-              map[ref] = p.data?.[ref]?.price ?? null;
+              const node = map?.[ref];
+
+              // soporta 2 formatos:
+              // 1) { id: { eur: 123 } }   (CoinGecko raw)
+              // 2) { id: { price: 123 } } (tu wrapper)
+              const rawPrice =
+                node?.price ??
+                node?.[vs] ??
+                null;
+
+              map[ref] = (typeof rawPrice === 'number' && isFinite(rawPrice)) ? rawPrice : null;
             }
-            this.cryptoPriceMap = map;
-            console.log('[PRICES LOADED]', this.cryptoPriceMap);
+            this.cryptoPriceMap = map; 
+            // ✅ Aplicar precio + calcular cantidad al ViewModel
+            this.topAssets = this.topAssets.map(row => {
+              if (row.type !== 'CRYPTO') return row;
+
+              const ref = String(row.providerRef || '').trim().toLowerCase();
+              const price = this.cryptoPriceMap[ref];
+
+              if (!price || price <= 0) {
+                return { ...row, unitPrice: null, quantity: null };
+              }
+
+              return {
+                ...row,
+                unitPrice: price,
+                quantity: row.valueAmount / price,
+              };
+            });
           }),
           catchError((err) => {
             // No rompemos el dashboard si falla el provider
