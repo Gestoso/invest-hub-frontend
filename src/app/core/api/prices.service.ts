@@ -16,6 +16,7 @@ export class PricesService {
       ids: (ids || []).join(','),
       vs: (vs || 'eur').toLowerCase(),
     };
+    console.log("prices/crypto")
 
     return this.http.get<any>(`${this.baseUrl}/prices/crypto`, { params });
   }
@@ -30,7 +31,7 @@ export class PricesService {
       ids: cleanIds.join(','),
       vs: (vs || 'eur').toLowerCase(),
     };
-
+    console.log("prices/crypto/markets")
     return this.http.get<any>(`${this.baseUrl}/prices/crypto/markets`, { params });
   }
 }

@@ -8,6 +8,7 @@ import { ChartConfiguration, ChartOptions } from 'chart.js';
 import { PricesService } from '../../core/api/prices.service';
 import { MessageService } from 'primeng/api';
 import { HttpClient } from '@angular/common/http';
+import { CryptoCatalogService } from 'src/app/core/api/crypto-catalog.service';
 
 type SortBy = 'pct' | 'qty' | 'value' | 'price';
 
@@ -38,7 +39,8 @@ export class DashboardComponent implements OnInit {
   topAssets: TopAssetRow[] = []; 
 
   cryptoPriceMap: Record<string, number | null> = {};
-  catalogLogoMap: Record<string, string> = {};
+  catalogLogoMap: Record<string, string | null> = {};
+  private catalogLogosLoaded = false;
   cryptoLogoMap: Record<string, string | null> = {};
 
   sortBy: SortBy = 'pct';
@@ -145,14 +147,17 @@ sortOptions = [
     private route: ActivatedRoute,
     private prices: PricesService,
     private msg: MessageService,
-    private http: HttpClient
+    private http: HttpClient,
+    private cryptoCatalogService: CryptoCatalogService
   ) {}
 
   ngOnInit(): void {
     this.loading = true;
 
-    this.route.queryParamMap
+    // 0) Cargar catálogo (logos) una vez antes del summary
+    this.loadCryptoCatalogLogos$()
       .pipe(
+        switchMap(() => this.route.queryParamMap),
         switchMap((params) => {
           const portfolioId = params.get('portfolioId') || undefined;
           this.loading = true;
@@ -171,15 +176,46 @@ sortOptions = [
           this.loading = false;
           this.error = err?.error?.message || 'Error cargando dashboard';
           this.msg.add({
-          severity: 'error',
-          summary: 'Dashboard',
-          detail: this.error,
-          life: 3500
+            severity: 'error',
+            summary: 'Dashboard',
+            detail: this.error,
+            life: 3500
           });
           if (err?.status === 401) this.router.navigateByUrl('/login');
         }
       });
   }
+
+
+  private loadCryptoCatalogLogos$() {
+    // Evita recargar en cada cambio de portfolio / navegación interna
+    if (this.catalogLogosLoaded) return of(true);
+
+    return this.cryptoCatalogService.list().pipe(
+      tap((res: any) => {
+        const map: Record<string, string | null> = {};
+        const items: any[] = res?.cryptos ?? [];
+
+        for (const c of items) {
+          const ref = String(c?.providerRef ?? '').trim().toLowerCase();
+          if (!ref) continue;
+          map[ref] = (typeof c?.logoUrl === 'string' && c.logoUrl.length > 0) ? c.logoUrl : null;
+        }
+
+        this.catalogLogoMap = map;
+        this.catalogLogosLoaded = true;
+      }),
+      map(() => true),
+      catchError((err) => {
+        // No rompemos el dashboard si el catálogo falla; simplemente no habrá logos.
+        console.error('Error loading crypto catalog', err);
+        this.catalogLogoMap = {};
+        this.catalogLogosLoaded = true;
+        return of(true);
+      })
+    );
+  }
+
 
   /**
    * Carga summary y luego, si aplica, carga precios crypto (1 request).
@@ -208,7 +244,7 @@ private loadSummaryAndPrices$(portfolioId?: string) {
           weightPct,
           unitPrice: null,
           quantity: null,
-          logoUrl: null,
+          logoUrl: this.catalogLogoMap[String(a.providerRef || '').trim().toLowerCase()] ?? null,
         } as TopAssetRow;
       });
 
@@ -262,51 +298,48 @@ private loadSummaryAndPrices$(portfolioId?: string) {
       }
 
       const vs = String(res.currency || 'EUR').toLowerCase();
+      
 
       // ✅ OJO: aquí usamos el endpoint NUEVO que devuelve price+image
-      return this.prices.getCryptoMarkets(uniqueRefs, vs).pipe(
+      return this.prices.getCryptoPrices(uniqueRefs, vs).pipe(
         tap((p: any) => {
+          // p viene normalizado por tu backend como:
+          // { ok:true, provider, vs, data: { [id]: { price, currency } } }
           const data: any = p?.data ?? {};
 
           const priceMap: Record<string, number | null> = {};
-          const logoMap: Record<string, string | null> = {};
 
           for (const ref of uniqueRefs) {
             const node = data?.[ref];
-
             const rawPrice = node?.price ?? null;
-            const rawImage = node?.image ?? null;
-
             priceMap[ref] = (typeof rawPrice === 'number' && isFinite(rawPrice)) ? rawPrice : null;
-            logoMap[ref] = (typeof rawImage === 'string' && rawImage.length > 0) ? rawImage : null;
           }
 
           this.cryptoPriceMap = priceMap;
-          this.cryptoLogoMap = logoMap;
-            
-          // ✅ Aplicar precio + logo + cantidad al ViewModel
+
+          // ✅ Aplicar precio + cantidad. Logo NO viene de aquí: viene del catálogo.
           this.topAssets = this.topAssets.map(row => {
             if (row.type !== 'CRYPTO') return row;
 
             const ref = String(row.providerRef || '').trim().toLowerCase();
             const unitPrice = this.cryptoPriceMap[ref] ?? null;
-            const logoUrl = this.cryptoLogoMap[ref] ?? null;
 
             return {
               ...row,
               unitPrice,
-              logoUrl,
               quantity: unitPrice && unitPrice > 0 ? (row.valueAmount / unitPrice) : null,
+              // logoUrl se queda como estaba (catalog)
             };
           });
         }),
         catchError((err) => {
-          console.error('Error loading crypto markets', err);
+          console.error('Error loading crypto prices', err);
           this.cryptoPriceMap = {};
-          this.cryptoLogoMap = {};
+          // NO toques logoMap aquí; logos vienen de catálogo
           return of(null);
         })
       );
+
     }),
 
     map(() => true)
