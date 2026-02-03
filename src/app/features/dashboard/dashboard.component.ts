@@ -35,13 +35,17 @@ interface TopAssetRow {
 
 export class DashboardComponent implements OnInit {
 
-  topAssets: TopAssetRow[] = [];
+  topAssets: TopAssetRow[] = []; 
+
+  cryptoPriceMap: Record<string, number | null> = {};
+  catalogLogoMap: Record<string, string> = {};
+  cryptoLogoMap: Record<string, string | null> = {};
 
   sortBy: SortBy = 'pct';
   sortDir: SortDir = 'desc';
 
 sortOptions = [
-  { label: '% del portfolio', value: 'pct' },
+  { label: 'Porcentaje', value: 'pct' },
   { label: 'Cantidad', value: 'qty' },
   { label: 'Valor total', value: 'value' },   // (antes “Valor”)
   { label: 'Precio', value: 'price' },        // ✅ nuevo
@@ -91,7 +95,7 @@ sortOptions = [
   currentScopePortfolioId?: string;
 
   // Sprint 3.5: precios crypto cacheados en memoria del componente
-  cryptoPriceMap: Record<string, number | null> = {};
+
 
   // Pie: por tipo
   pieByTypeLabels: string[] = [];
@@ -181,148 +185,134 @@ sortOptions = [
    * Carga summary y luego, si aplica, carga precios crypto (1 request).
    * Devuelve un observable que completa cuando todo termina.
    */
-  private loadSummaryAndPrices$(portfolioId?: string) {
-    return this.dash.summary(portfolioId).pipe(
-      tap((res) => {
-        // 1) Estado principal
-        this.data = res; 
-        const grandTotal = res?.totals?.total ?? 0;
+private loadSummaryAndPrices$(portfolioId?: string) {
+  return this.dash.summary(portfolioId).pipe(
+    tap((res) => {
+      // 1) Estado principal
+      this.data = res;
 
-        this.topAssets = (res.byAsset || []).map((a: any) => {
-          const valueAmount = Number(a.total ?? 0);
-          const weightPct = grandTotal > 0 ? (valueAmount / grandTotal) * 100 : 0;
+      const grandTotal = res?.totals?.total ?? 0;
 
-          return {
-            assetId: a.assetId,
-            name: a.name,
-            symbol: a.symbol,
-            type: a.type,
-            providerRef: a.providerRef,
-            valueAmount,
-            weightPct,
-            unitPrice: null,
-            quantity: null,
-          } as TopAssetRow;
-        });
+      // ✅ ViewModel para Top assets
+      this.topAssets = (res.byAsset || []).map((a: any) => {
+        const valueAmount = Number(a.total ?? 0);
+        const weightPct = grandTotal > 0 ? (valueAmount / grandTotal) * 100 : 0;
 
-        this.currencySymbol = this.getSymbol(this.data?.currency);
-        this.fxTooltip = this.formatFxTooltip(this.data);
-        this.currentScopePortfolioId = res.scope?.portfolioId;
+        return {
+          assetId: a.assetId,
+          name: a.name,
+          symbol: a.symbol,
+          type: a.type,
+          providerRef: a.providerRef,
+          valueAmount,
+          weightPct,
+          unitPrice: null,
+          quantity: null,
+          logoUrl: null,
+        } as TopAssetRow;
+      });
 
-        // 2) Detectar root/subportfolio
-        const scopeRow = (res.byPortfolio || []).find(p => p.id === res.scope?.portfolioId);
-        this.isRootScope = scopeRow?.parentId === null;
+      this.currencySymbol = this.getSymbol(this.data?.currency);
+      this.fxTooltip = this.formatFxTooltip(this.data);
+      this.currentScopePortfolioId = res.scope?.portfolioId;
 
-        // 3) Datasets existentes
-        this.pieByTypeLabels = res.byType.map(x => x.type);
-        this.pieByTypeData = res.byType.map(x => x.total);
-        this.pieByTypeDataset = {
-          labels: this.pieByTypeLabels,
-          datasets: [{ data: this.pieByTypeData }]
-        };
+      // 2) Detectar root/subportfolio
+      const scopeRow = (res.byPortfolio || []).find(p => p.id === res.scope?.portfolioId);
+      this.isRootScope = scopeRow?.parentId === null;
 
-        const scopeId = res.scope?.portfolioId;
-        const portfolioRows = (res.byPortfolio || []).filter(p => p.parentId === scopeId);
-        this.pieByPortfolioLabels = portfolioRows.map(p => p.name);
-        this.pieByPortfolioData = portfolioRows.map(p => p.total);
-        this.pieByPortfolioDataset = {
-          labels: this.pieByPortfolioLabels,
-          datasets: [{ data: this.pieByPortfolioData }]
-        };
+      // 3) Datasets existentes
+      this.pieByTypeLabels = res.byType.map(x => x.type);
+      this.pieByTypeData = res.byType.map(x => x.total);
+      this.pieByTypeDataset = {
+        labels: this.pieByTypeLabels,
+        datasets: [{ data: this.pieByTypeData }]
+      };
 
-        this.pieByAssetLabels = (res.byAsset || []).map(a => a.symbol ? `${a.symbol}` : a.name);
-        this.pieByAssetData = (res.byAsset || []).map(a => a.total);
-        this.pieByAssetDataset = {
-          labels: this.pieByAssetLabels,
-          datasets: [{ data: this.pieByAssetData }]
-        };
+      const scopeId = res.scope?.portfolioId;
+      const portfolioRows = (res.byPortfolio || []).filter(p => p.parentId === scopeId);
+      this.pieByPortfolioLabels = portfolioRows.map(p => p.name);
+      this.pieByPortfolioData = portfolioRows.map(p => p.total);
+      this.pieByPortfolioDataset = {
+        labels: this.pieByPortfolioLabels,
+        datasets: [{ data: this.pieByPortfolioData }]
+      };
 
-        // 4) Reset precios al cambiar scope (para que no se queden precios “viejos”)
-        this.cryptoPriceMap = {};
-        // Actualizamos quantity para cryptos (si price disponible)
-this.topAssets = this.topAssets.map(row => {
-  if (row.type !== 'CRYPTO') return { ...row, unitPrice: null, quantity: null };
+      this.pieByAssetLabels = (res.byAsset || []).map(a => a.symbol ? `${a.symbol}` : a.name);
+      this.pieByAssetData = (res.byAsset || []).map(a => a.total);
+      this.pieByAssetDataset = {
+        labels: this.pieByAssetLabels,
+        datasets: [{ data: this.pieByAssetData }]
+      };
 
-  const ref = String(row.providerRef || '').trim().toLowerCase();
-  const price = this.cryptoPriceMap[ref];
+      // 4) ✅ Reset mapas al cambiar scope (evita valores viejos)
+      this.cryptoPriceMap = {};
+      this.cryptoLogoMap = {};
+    }),
 
-  if (!price || price <= 0) {
-    return { ...row, unitPrice: null, quantity: null };
-  }
+    // 5) Cargar precios+logos crypto (si hay providerRef)
+    switchMap((res) => {
+      const cryptoRefs = (res.byAsset || [])
+        .filter((a: any) => a.type === 'CRYPTO' && !!a.providerRef)
+        .map((a: any) => String(a.providerRef).trim().toLowerCase());
 
-  return {
-    ...row,
-    unitPrice: price,
-    quantity: row.valueAmount / price,
-  };
-});
+      const uniqueRefs = Array.from(new Set(cryptoRefs)).filter(Boolean);
 
+      if (!uniqueRefs.length) {
+        return of(null);
+      }
 
-      }),
+      const vs = String(res.currency || 'EUR').toLowerCase();
 
-      // 5) Cargar precios crypto (si hay providerRef)
-      switchMap((res) => {
-        // Esperamos que byAsset traiga providerRef para CRYPTO:
-        // { assetId, name, symbol, type, providerRef, total }
-        const cryptoRefs = (res.byAsset || [])
-          .filter((a: any) => a.type === 'CRYPTO' && !!a.providerRef)
-          .map((a: any) => String(a.providerRef).trim().toLowerCase());
+      // ✅ OJO: aquí usamos el endpoint NUEVO que devuelve price+image
+      return this.prices.getCryptoMarkets(uniqueRefs, vs).pipe(
+        tap((p: any) => {
+          const data: any = p?.data ?? {};
 
-        const uniqueRefs = Array.from(new Set(cryptoRefs)).filter(Boolean); 
-        console.log(uniqueRefs)
-        if (!uniqueRefs.length) {
-          // Nada que pedir
+          const priceMap: Record<string, number | null> = {};
+          const logoMap: Record<string, string | null> = {};
+
+          for (const ref of uniqueRefs) {
+            const node = data?.[ref];
+
+            const rawPrice = node?.price ?? null;
+            const rawImage = node?.image ?? null;
+
+            priceMap[ref] = (typeof rawPrice === 'number' && isFinite(rawPrice)) ? rawPrice : null;
+            logoMap[ref] = (typeof rawImage === 'string' && rawImage.length > 0) ? rawImage : null;
+          }
+
+          this.cryptoPriceMap = priceMap;
+          this.cryptoLogoMap = logoMap;
+            
+          // ✅ Aplicar precio + logo + cantidad al ViewModel
+          this.topAssets = this.topAssets.map(row => {
+            if (row.type !== 'CRYPTO') return row;
+
+            const ref = String(row.providerRef || '').trim().toLowerCase();
+            const unitPrice = this.cryptoPriceMap[ref] ?? null;
+            const logoUrl = this.cryptoLogoMap[ref] ?? null;
+
+            return {
+              ...row,
+              unitPrice,
+              logoUrl,
+              quantity: unitPrice && unitPrice > 0 ? (row.valueAmount / unitPrice) : null,
+            };
+          });
+        }),
+        catchError((err) => {
+          console.error('Error loading crypto markets', err);
+          this.cryptoPriceMap = {};
+          this.cryptoLogoMap = {};
           return of(null);
-        }
+        })
+      );
+    }),
 
-          const vs = String(res.currency || 'EUR').toLowerCase();
-          return this.prices.getCryptoPrices(uniqueRefs, vs).pipe(
-          tap((p) => {
-            const map: any = (p as any)?.data ?? (p as any);
-            for (const ref of uniqueRefs) {
-              const node = map?.[ref];
+    map(() => true)
+  );
+}
 
-              // soporta 2 formatos:
-              // 1) { id: { eur: 123 } }   (CoinGecko raw)
-              // 2) { id: { price: 123 } } (tu wrapper)
-              const rawPrice =
-                node?.price ??
-                node?.[vs] ??
-                null;
-
-              map[ref] = (typeof rawPrice === 'number' && isFinite(rawPrice)) ? rawPrice : null;
-            }
-            this.cryptoPriceMap = map; 
-            // ✅ Aplicar precio + calcular cantidad al ViewModel
-            this.topAssets = this.topAssets.map(row => {
-              if (row.type !== 'CRYPTO') return row;
-
-              const ref = String(row.providerRef || '').trim().toLowerCase();
-              const price = this.cryptoPriceMap[ref];
-
-              if (!price || price <= 0) {
-                return { ...row, unitPrice: null, quantity: null };
-              }
-
-              return {
-                ...row,
-                unitPrice: price,
-                quantity: row.valueAmount / price,
-              };
-            });
-          }),
-          catchError((err) => {
-            // No rompemos el dashboard si falla el provider
-            console.error('Error loading crypto prices', err);
-            this.cryptoPriceMap = {};
-            return of(null);
-          })
-        );
-      }),
-
-      map(() => true)
-    );
-  }
 
   logout(): void {
     this.auth.logout();

@@ -1,23 +1,36 @@
-import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { environment } from '../../../environments/environment';
-import { Observable } from 'rxjs';
+import { Injectable } from '@angular/core';
+import { environment } from 'src/environments/environment';
 
-export type CryptoPricesResponse = {
-  ok: boolean;
-  provider: string;
-  vs: string;
-  data: Record<string, { price: number | null; currency: string }>;
-};
-
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root',
+})
 export class PricesService {
-  private base = environment.apiUrl;
+  private readonly baseUrl = environment.apiUrl;
+
   constructor(private http: HttpClient) {}
 
-  getCryptoPrices(ids: string[], vs = 'eur'): Observable<CryptoPricesResponse> {
-    const clean = Array.from(new Set(ids.map(x => (x || '').trim().toLowerCase()).filter(Boolean)));
-    const idsParam = clean.join(',');
-    return this.http.get<CryptoPricesResponse>(`${this.base}/prices/crypto?ids=${encodeURIComponent(idsParam)}&vs=${encodeURIComponent(vs)}`);
+  // 🔹 YA EXISTENTE (simple/price)
+  getCryptoPrices(ids: string[], vs: string) {
+    const params = {
+      ids: (ids || []).join(','),
+      vs: (vs || 'eur').toLowerCase(),
+    };
+
+    return this.http.get<any>(`${this.baseUrl}/prices/crypto`, { params });
+  }
+
+  // 🔹 NUEVO: prices + logos (CoinGecko /coins/markets)
+  getCryptoMarkets(ids: string[], vs: string) {
+    const cleanIds = Array.from(
+      new Set((ids || []).map(x => String(x).trim().toLowerCase()).filter(Boolean))
+    );
+
+    const params = {
+      ids: cleanIds.join(','),
+      vs: (vs || 'eur').toLowerCase(),
+    };
+
+    return this.http.get<any>(`${this.baseUrl}/prices/crypto/markets`, { params });
   }
 }
