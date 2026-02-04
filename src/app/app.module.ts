@@ -35,6 +35,7 @@ import { MessageService } from 'primeng/api';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { LogsComponent } from './features/logs/logs.component';
 import { Tag, TagModule } from 'primeng/tag';
+import { AssetDetailComponent } from './features/asset-detail/asset-detail.component';  
 
 @NgModule({
   declarations: [
@@ -47,7 +48,8 @@ import { Tag, TagModule } from 'primeng/tag';
     PositionModalComponent,
     SubportfolioModalComponent,
     ShellComponent,
-    LogsComponent
+    LogsComponent,
+    AssetDetailComponent
   ],
   imports: [
     BrowserModule,

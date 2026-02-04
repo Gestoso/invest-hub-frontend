@@ -9,6 +9,7 @@ import { PortfoliosComponent } from './features/portfolios/portfolios.component'
 import { AssetsComponent } from './features/assets/assets.component';
 import { ShellComponent } from './layout/shell/shell.component';
 import { LogsComponent } from './features/logs/logs.component';
+import { AssetDetailComponent } from './features/asset-detail/asset-detail.component';
 
 const routes: Routes = [
   // públicas
@@ -24,6 +25,7 @@ const routes: Routes = [
       { path: 'dashboard', component: DashboardComponent },
       { path: 'logs', component: LogsComponent },
       { path: 'portfolios', component: PortfoliosComponent },
+      { path: 'assets/:assetId', component: AssetDetailComponent },
       { path: 'assets', component: AssetsComponent },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ]

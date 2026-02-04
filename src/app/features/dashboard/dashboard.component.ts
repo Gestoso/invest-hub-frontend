@@ -46,7 +46,7 @@ export class DashboardComponent implements OnInit {
   sortBy: SortBy = 'pct';
   sortDir: SortDir = 'desc';
 
-sortOptions = [
+  sortOptions = [
   { label: 'Porcentaje', value: 'pct' },
   { label: 'Cantidad', value: 'qty' },
   { label: 'Valor total', value: 'value' },   // (antes “Valor”)
@@ -74,9 +74,69 @@ sortOptions = [
     return list;
   }
 
+  get hasTopAssets(): boolean {
+    return Array.isArray(this.topAssetsSorted) && this.topAssetsSorted.length > 0;
+  }
+
+  get isTopAssetsEmpty(): boolean {
+    return !this.loading && !this.hasTopAssets;
+  }
+goToAsset(assetId?: string) {
+  if (!assetId) return;
+  this.router.navigate(['/assets', assetId]);
+}
+
+
   toggleSortDir() {
     this.sortDir = this.sortDir === 'desc' ? 'asc' : 'desc';
+    this.persistTopAssetsSort();
   }
+  clampPct(pct: number | null | undefined): number {
+    const n = Number(pct);
+    if (!Number.isFinite(n)) return 0;
+    return Math.max(0, Math.min(100, n));
+  }
+
+  // Para que porcentajes pequeños no “desaparezcan” visualmente
+  barPct(pct: number | null | undefined): number {
+    const v = this.clampPct(pct);
+    if (v === 0) return 0;
+    return Math.max(2, v); // mínimo 2% visible
+  }
+
+  private readonly TOP_ASSETS_SORT_KEY = 'investhub.dashboard.topAssetsSort.v1';
+
+  private persistTopAssetsSort() {
+    try {
+      localStorage.setItem(
+        this.TOP_ASSETS_SORT_KEY,
+        JSON.stringify({ sortBy: this.sortBy, sortDir: this.sortDir })
+      );
+    } catch {
+      // sin drama si el navegador bloquea storage
+    }
+  }
+
+  private restoreTopAssetsSort() {
+    try {
+      const raw = localStorage.getItem(this.TOP_ASSETS_SORT_KEY);
+      if (!raw) return;
+
+      const parsed = JSON.parse(raw);
+
+      const sortBy = parsed?.sortBy;
+      const sortDir = parsed?.sortDir;
+
+      const validBy: SortBy[] = ['pct', 'qty', 'value', 'price'];
+      const validDir: SortDir[] = ['asc', 'desc'];
+
+      if (validBy.includes(sortBy)) this.sortBy = sortBy;
+      if (validDir.includes(sortDir)) this.sortDir = sortDir;
+    } catch {
+      // si está corrupto, lo ignoramos
+    }
+  }
+
 
 
   loading = false;
@@ -152,6 +212,7 @@ sortOptions = [
   ) {}
 
   ngOnInit(): void {
+    this.restoreTopAssetsSort();
     this.loading = true;
 
     // 0) Cargar catálogo (logos) una vez antes del summary
@@ -373,57 +434,62 @@ private loadSummaryAndPrices$(portfolioId?: string) {
   }
 
   loadCurrencies() {
-  this.http.get<any>("/api/v1/fx/currencies").subscribe({
-    next: (res) => {
-      this.currencyOptions = res.currencies.map((c: string) => ({
-        label: c,
-        value: c,
-      }));
-    },
-  });
-}
-
-loadUserCurrency() {
-  this.http.get<any>("/api/v1/users/me/display-currency").subscribe({
-    next: (res) => {
-      this.selectedCurrency = res.currency;
-    },
-  });
-}
-
-onCurrencyChange(currency: string) {
-  this.http
-    .put("/api/v1/users/me/display-currency", { currency })
-    .subscribe({
-      next: () => {
-        this.reloadSummary(); // 🔥 clave
+    this.http.get<any>("/api/v1/fx/currencies").subscribe({
+      next: (res) => {
+        this.currencyOptions = res.currencies.map((c: string) => ({
+          label: c,
+          value: c,
+        }));
       },
     });
-}
+  }
 
-getSymbol(code?: string): string {
-const c = String(code || "EUR").toUpperCase();
-return this.symbolMap[c] ?? c;
-}
+  loadUserCurrency() {
+    this.http.get<any>("/api/v1/users/me/display-currency").subscribe({
+      next: (res) => {
+        this.selectedCurrency = res.currency;
+      },
+    });
+  }
+
+  onCurrencyChange(currency: string) {
+    this.http
+      .put("/api/v1/users/me/display-currency", { currency })
+      .subscribe({
+        next: () => {
+          this.reloadSummary(); // 🔥 clave
+        },
+      });
+  }
+
+  getSymbol(code?: string): string {
+  const c = String(code || "EUR").toUpperCase();
+  return this.symbolMap[c] ?? c;
+  }
 
 
-private formatFxTooltip(data: any) {
-if (!data?.fx) return "";
+  private formatFxTooltip(data: any) {
+  if (!data?.fx) return "";
 
 
-const fetched = data.fx.fetchedAt ? new Date(data.fx.fetchedAt) : null;
-const fetchedStr = fetched
-? fetched.toLocaleString() // se verá en local del navegador
-: "N/A";
+  const fetched = data.fx.fetchedAt ? new Date(data.fx.fetchedAt) : null;
+  const fetchedStr = fetched
+  ? fetched.toLocaleString() // se verá en local del navegador
+  : "N/A";
 
 
-// Ej: "FX: cache · Updated: 28/01/2026, 12:00:00 · Rate: 1 EUR = 1.08 USD"
-const base = data.baseCurrency || "EUR";
-const cur = data.currency || "EUR";
-const rate = data.fx.rate;
+  // Ej: "FX: cache · Updated: 28/01/2026, 12:00:00 · Rate: 1 EUR = 1.08 USD"
+  const base = data.baseCurrency || "EUR";
+  const cur = data.currency || "EUR";
+  const rate = data.fx.rate;
 
 
-return `FX: ${data.fx.source} · Updated: ${fetchedStr} · Rate: 1 ${base} = ${rate} ${cur}`;
-}
+  return `FX: ${data.fx.source} · Updated: ${fetchedStr} · Rate: 1 ${base} = ${rate} ${cur}`;
+  }
+
+  onSortByChange(value: SortBy) {
+    this.sortBy = value;
+    this.persistTopAssetsSort();
+  }
 
 }

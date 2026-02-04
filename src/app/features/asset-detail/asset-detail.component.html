@@ -1,0 +1,119 @@
+<div class="asset-detail-wrap">
+
+  <div class="flex align-items-center justify-content-between mb-3">
+    <div>
+      <div class="text-2xl font-semibold">Detalle de activo</div>
+      <div class="opacity-70 text-sm">Contexto + KPIs + distribución</div>
+    </div>
+
+    <button pButton class="p-button-sm p-button-text" icon="pi pi-arrow-left" label="Volver"
+      (click)="back()"></button>
+  </div>
+
+  <div *ngIf="loading" class="opacity-70">
+    <p-progressSpinner styleClass="w-3rem h-3rem"></p-progressSpinner>
+    <div class="mt-2">Cargando...</div>
+  </div>
+
+  <div *ngIf="!loading && error" class="p-3">
+    <p-message severity="error" text="{{ error }}"></p-message>
+  </div>
+
+  <ng-container *ngIf="vm && !loading && !error">
+
+    <!-- 1) HEADER -->
+    <p-card styleClass="mb-3">
+      <div class="flex align-items-center gap-3">
+        <!-- logo (si lo quieres luego desde catálogo) -->
+        <div class="asset-logo-placeholder"></div>
+
+        <div>
+          <div class="text-xl font-semibold">
+            {{ vm.name }} <span class="opacity-70" *ngIf="vm.symbol">({{ vm.symbol }})</span>
+          </div>
+          <div class="opacity-70">
+            {{ (vm.weightPct | number:'1.0-1') }}% del portfolio
+          </div>
+        </div>
+      </div>
+    </p-card>
+
+    <!-- 2) KPIs -->
+    <div class="grid mb-3">
+      <div class="col-12 md:col-3">
+        <p-card>
+          <div class="opacity-70 text-sm">Cantidad total</div>
+          <div class="text-xl font-semibold">
+            <ng-container *ngIf="vm.quantity !== null; else dash"> {{ vm.quantity | number:'1.0-6' }} </ng-container>
+            <ng-template #dash>—</ng-template>
+          </div>
+        </p-card>
+      </div>
+
+      <div class="col-12 md:col-3">
+        <p-card>
+          <div class="opacity-70 text-sm">Valor total</div>
+          <div class="text-xl font-semibold">
+            {{ currencySymbol }}{{ vm.totalValue | number:'1.2-2' }}
+          </div>
+        </p-card>
+      </div>
+
+      <div class="col-12 md:col-3">
+        <p-card>
+          <div class="opacity-70 text-sm">Precio actual</div>
+          <div class="text-xl font-semibold">
+            <ng-container *ngIf="vm.unitPrice !== null; else dash2">
+              {{ currencySymbol }}{{ vm.unitPrice | number:'1.2-2' }}
+            </ng-container>
+            <ng-template #dash2>—</ng-template>
+          </div>
+        </p-card>
+      </div>
+
+      <div class="col-12 md:col-3">
+        <p-card>
+          <div class="opacity-70 text-sm">Portfolios</div>
+          <div class="text-xl font-semibold">
+            {{ vm.portfoliosCount }}
+          </div>
+        </p-card>
+      </div>
+    </div>
+
+    <!-- 3) Distribución por portfolio -->
+    <p-card>
+      <div class="text-lg font-semibold mb-2">Distribución por portfolio</div>
+
+      <p-table [value]="rows" styleClass="p-datatable-sm">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Portfolio</th>
+            <th class="text-right">Cantidad</th>
+            <th class="text-right">Valor</th>
+            <th class="text-right">%</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-r>
+          <tr>
+            <td class="font-semibold">{{ r.portfolioName }}</td>
+            <td class="text-right">
+              <ng-container *ngIf="r.quantity !== null; else dash3">{{ r.quantity | number:'1.0-6' }}</ng-container>
+              <ng-template #dash3>—</ng-template>
+            </td>
+            <td class="text-right">{{ currencySymbol }}{{ r.value | number:'1.2-2' }}</td>
+            <td class="text-right">{{ r.pct | number:'1.0-1' }}%</td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="4" class="opacity-60">Sin datos de distribución</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </p-card>
+
+  </ng-container>
+</div>
