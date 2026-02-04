@@ -81,6 +81,22 @@
       </div>
     </div>
 
+    <p-card styleClass="mb-3" *ngIf="chartReady">
+    <div class="flex align-items-center justify-content-between mb-2">
+        <div class="text-lg font-semibold">Evolución del precio (30 días)</div>
+        <div class="opacity-70 text-sm">{{ currencySymbol }}</div>
+    </div>
+
+    <div style="height: 260px;">
+        <canvas
+        baseChart
+        [data]="priceChartData"
+        [options]="priceChartOptions"
+        [type]="priceChartType">
+        </canvas>
+    </div>
+    </p-card>
+
     <!-- 3) Distribución por portfolio -->
     <p-card>
       <div class="text-lg font-semibold mb-2">Distribución por portfolio</div>

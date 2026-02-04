@@ -6,6 +6,7 @@ import { PricesService } from 'src/app/core/api/prices.service';
 import { HttpClient } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
 import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
+import { ChartConfiguration, ChartType } from 'chart.js';
 
 type AssetVM = {
   id: string;
@@ -31,6 +32,8 @@ type RowByPortfolio = {
   pct: number;
 };
 
+
+
 @Component({
   selector: 'app-asset-detail',
   templateUrl: './asset-detail.component.html',
@@ -48,6 +51,58 @@ export class AssetDetailComponent implements OnInit {
   currencySymbol = '€';
 
   private base = environment.apiUrl;
+
+  chartReady = false;
+ 
+  priceChartType: 'line' = 'line';
+
+  priceChartData: ChartConfiguration<'line'>['data'] = {
+    labels: [],
+    datasets: [
+      {
+        data: [],
+        label: 'Precio',
+        tension: 0.25,
+        pointRadius: 0,
+        borderWidth: 2,
+      },
+    ],
+  };
+
+  priceChartOptions: ChartConfiguration<'line'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        mode: 'index',
+        intersect: false,
+        callbacks: {
+          label: (ctx) => {
+            const v = ctx.parsed.y;
+            if (v == null || !isFinite(v)) return '';
+            return `${this.currencySymbol}${v.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}`;
+          },
+        },
+      },
+    },
+    interaction: { mode: 'index', intersect: false },
+    scales: {
+      x: { ticks: { maxTicksLimit: 8 } },
+      y: {
+        ticks: {
+          maxTicksLimit: 6,
+          callback: (value) =>
+            `${this.currencySymbol}${Number(value).toLocaleString(undefined, {
+              maximumFractionDigits: 2,
+            })}`,
+        },
+      },
+    },
+  };
 
   constructor(
     private route: ActivatedRoute,
@@ -102,12 +157,9 @@ export class AssetDetailComponent implements OnInit {
             const dist$ = this.loadDistributionByPortfolio(assetId).pipe(
               catchError(() => of([] as RowByPortfolio[]))
             );
-
             return forkJoin({ price: price$, dist: dist$ }).pipe(
-              map(({ price, dist }) => {
-                const quantity = price && price > 0 ? (totalValue / price) : null;
-
-                const portfoliosCount = dist.length;
+              switchMap(({ price, dist }) => {
+                const quantity = price && price > 0 ? totalValue / price : null;
 
                 const vm: AssetVM = {
                   id: assetId,
@@ -119,10 +171,21 @@ export class AssetDetailComponent implements OnInit {
                   totalValue,
                   unitPrice: price,
                   quantity,
-                  portfoliosCount,
+                  portfoliosCount: dist.length,
                 };
 
-                return { ok: true, vm, dist };
+                // ✅ Histórico solo para CRYPTO con providerRef
+                if (vm.type === 'CRYPTO' && vm.providerRef) {
+                  return this.loadPriceHistoryFromCoinGecko(
+                    String(vm.providerRef).toLowerCase(),
+                    this.currency.toLowerCase(),
+                    30
+                  ).pipe(
+                    map((hist) => ({ ok: true, vm, dist, hist }))
+                  );
+                }
+
+                return of({ ok: true, vm, dist, hist: null });
               })
             );
           })
@@ -139,6 +202,22 @@ export class AssetDetailComponent implements OnInit {
 
       this.vm = res.vm;
       this.rows = res.dist;
+
+      if (res.hist?.labels?.length && res.hist?.data?.length) {
+        this.priceChartData = {
+          labels: res.hist.labels,
+          datasets: [
+            {
+              ...this.priceChartData.datasets[0],
+              data: res.hist.data,
+              label: `${this.vm?.symbol || this.vm?.name || 'Precio'} (${this.currencySymbol})`,
+            },
+          ],
+        };
+        this.chartReady = true;
+      } else {
+        this.chartReady = false;
+      }
     });
   }
 
@@ -197,6 +276,28 @@ export class AssetDetailComponent implements OnInit {
           pct: total > 0 ? (v.value / total) * 100 : 0,
         }));
       })
+    );
+  }
+
+  private loadPriceHistoryFromCoinGecko(coinId: string, vs: string, days = 30) {
+    const url = `https://api.coingecko.com/api/v3/coins/${encodeURIComponent(
+      coinId
+    )}/market_chart?vs_currency=${encodeURIComponent(vs)}&days=${days}`;
+
+    return this.http.get<any>(url).pipe(
+      map((r) => {
+        const prices: [number, number][] = r?.prices ?? [];
+        const labels = prices.map(([ts]) => {
+          const d = new Date(ts);
+          // etiqueta simple (día/mes)
+          return `${String(d.getDate()).padStart(2, '0')}/${String(
+            d.getMonth() + 1
+          ).padStart(2, '0')}`;
+        });
+        const data = prices.map(([, p]) => Number(p));
+        return { labels, data };
+      }),
+      catchError(() => of({ labels: [], data: [] }))
     );
   }
 }
