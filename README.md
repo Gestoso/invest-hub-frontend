@@ -32,7 +32,6 @@ InvestHub is a full-stack investment tracking platform developed as an MVP.
 
 ### High-level
 
-```mermaid
 flowchart LR
 A[Angular Frontend] --> B[REST API - Node.js / Express]
 B --> C[Prisma ORM]
