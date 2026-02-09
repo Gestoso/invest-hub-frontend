@@ -1,3 +1,5 @@
+
+https://github.com/user-attachments/assets/1682024b-031b-4951-b4cf-0032f45e70ac
 # InvestHub
 
 ![Frontend](https://img.shields.io/badge/Frontend-Angular-red)
@@ -139,3 +141,6 @@ FX Rates (cached)
 Price Cache
 
 Portfolios support tree structure (parent → children) enabling aggregated summaries across nested portfolios.
+
+https://github.com/user-attachments/assets/9de7a553-d0d0-405e-931c-69739a98e2c1
+
