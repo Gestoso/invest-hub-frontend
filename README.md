@@ -1,27 +1,142 @@
-# InvestHubFrontend
+# InvestHub
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 16.2.16.
+![Frontend](https://img.shields.io/badge/Frontend-Angular-red)
+![Backend](https://img.shields.io/badge/Backend-Node.js-green)
+![Database](https://img.shields.io/badge/Database-MySQL-blue)
+![ORM](https://img.shields.io/badge/ORM-Prisma-black)
+![Architecture](https://img.shields.io/badge/Architecture-Modular-success)
+![Auth](https://img.shields.io/badge/Auth-JWT-orange)
+![Status](https://img.shields.io/badge/status-MVP-yellow)
 
-## Development server
+InvestHub is a full-stack investment tracking platform developed as an MVP.   
+ 
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
+---
 
-## Code scaffolding
+## Core Features
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+- JWT authentication (Register / Login)
+- Real-time portfolio base currency conversion (live FX rates)
+- Multiple portfolios (Crypto, Metals, ETFs)
+- Real-time crypto market prices
+- Detailed asset view
+- Real-time asset price chart
+- Portfolio allocation distribution chart
+- Activity logs (portfolio history tracking)
+- Add assets to portfolios
+- Asset filtering and organization system
 
-## Build
+---
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+## Architecture
 
-## Running unit tests
+### High-level
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+```mermaid
+flowchart LR
+A[Angular Frontend] --> B[REST API - Node.js / Express]
+B --> C[Prisma ORM]
+C --> D[(MySQL Database)]
+B --> E[Auth Middleware - JWT]
+B --> F[FX Service]
+B --> G[Crypto Price Service - CoinGecko]
 
-## Running end-to-end tests
 
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
+Backend Architecture
 
-## Further help
+The backend follows a modular architecture with clear separation of concerns:
 
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+src/
+ ├── config
+ ├── db
+ ├── middleware
+ │    ├── authRequired.js
+ │    └── errorHandler.js
+ ├── modules
+ │    ├── auth
+ │    ├── users
+ │    ├── portfolios
+ │    ├── positions
+ │    ├── crypto
+ │    ├── prices
+ │    └── dashboard
+ ├── services
+ │    └── prices
+ └── lib
+
+Each module contains:
+
+routes → API endpoints
+
+controller → HTTP layer
+
+service → business logic
+
+repo → database access (Prisma)
+
+
+Authentication
+
+Authentication is implemented using JWT tokens and enforced through middleware:
+
+Token issued at login/register
+
+Protected routes use authRequired middleware
+
+User identity injected into request context
+
+
+Real-Time Data
+Crypto Prices
+
+Live crypto prices fetched via external provider (CoinGecko)
+
+Cached to avoid rate limits
+
+Market values calculated dynamically per asset
+
+FX Conversion
+
+Daily FX rates fetched and cached
+
+Portfolio values converted to user display currency
+
+Conversion applied recursively to financial data
+
+
+Dashboard Engine (Core Logic)
+
+The dashboard computes portfolio summaries including:
+
+Totals per portfolio
+
+Totals per asset type
+
+Totals per asset
+
+Market vs manual valuation
+
+Real-time crypto market valuation
+
+Market distribution is calculated dynamically from position quantities and live prices.
+
+
+Data Model (Conceptual)
+
+Main entities:
+
+User
+
+Portfolio (hierarchical)
+
+PortfolioPosition
+
+Asset
+
+Logs / Movements
+
+FX Rates (cached)
+
+Price Cache
+
+Portfolios support tree structure (parent → children) enabling aggregated summaries across nested portfolios.

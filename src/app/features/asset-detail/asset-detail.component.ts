@@ -75,7 +75,7 @@ export class AssetDetailComponent implements OnInit {
     plugins: {
       legend: { display: false },
       tooltip: {
-        mode: 'index',
+        mode: 'index', 
         intersect: false,
         callbacks: {
           label: (ctx) => {
